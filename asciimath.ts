@@ -1,16 +1,3 @@
-
-/*
-ASCIIMathML.ts
-==============
-lightly modified by Tom Berend - original copyright below...
-convert to a TS function that accepts AsciiMath and returns MathML.
-not a page translator.  Don't touch my document, I'll do that.
-and don't worry about IE.
-got rid of the onLoad function (just use ASCIIMathML.js for that)
-
-
-
-
 /*
 ASCIIMathML.js
 ==============
@@ -23,8 +10,8 @@ Just add the next line to your HTML page with this file in the same folder:
 
 <script type="text/javascript" src="ASCIIMathML.js"></script>
 
-Version 2.2 Mar 3, 2014.
-Latest version at https://github.com/mathjax/asciimathml
+Version 2.4 April 13 2026.
+Latest version at https://github.com/asciimath/asciimathml
 If you use it on a webpage, please send the URL to jipsen@chapman.edu
 
 Copyright (c) 2014 Peter Jipsen and other ASCIIMathML.js contributors
@@ -49,27 +36,216 @@ THE SOFTWARE.
 */
 
 
-// or another family (e.g. "arial")
-let automathrecognize = false; // writing "amath" on page makes this true
-let checkForMathML = true;     // check if browser can display MathML
-let notifyIfNoMathML = true;   // display note at top if no MathML capability
-let alertIfNoMathML = false;   // show alert box if no MathML capability
-let translateOnLoad = true;    // set to false to do call translators from js
-let translateASCIIMath = true; // false to preserve `..`
-let displaystyle = true;      // puts limits above and below large operators
-let showasciiformulaonhover = true; // helps students learn ASCIIMath
-let decimalsign = ".";        // if "," then when writing lists or matrices put
-//a space after the "," like `(1, 2)` not `(1,2)`
-let fixphi = true;  		//false to return to legacy phi/varphi mapping
 
-/*++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
+/*
+modified by Tom Berend 16-May-2026 - converted to TS class and converted to run without DOM (ie: server-style)
 
+The original uses DOM nodes as the data structure to build the MathML output. This uses a simplified tree instead.
+
+minimal example:
+
+        import { AMserver } from '../build/amserver.js';
+        let am = new AMserver()
+        console.log(am.parseMath('a^b'))
+
+        //  <math><mstyle mathcolor= "blue" fontsize= "1em" mathsize= "1em" fontfamily= "serif" mathvariant= "serif" displaystyle= "true">
+        //       <msup><mi>a</mi><mi>b</mi></msup></mstyle></math>
+
+*/
+
+
+export class AMNode {
+    nodeName: string
+    nodeValue: string = ''  // DOM allows NULL, but not important
+    parent: AMNode | null = null
+
+    childNodes: AMNode[] = []   // maintain them together, with the SAME nodes
+    children: AMNode[] = []
+
+    attributes: { [key: string]: any } = {}
+    style: { [key: string]: any } = { fontWeight: '', fontStyle: '' }
+    unique: symbol
+
+    constructor(t: string, content = '') {
+        this.nodeName = t
+        this.nodeValue = content
+        this.unique = Symbol()
+    }
+
+    appendChild(frag: AMNode): AMNode {
+
+        if (frag.nodeName == '') {   // document fragment, don't copy head=
+            for (let i = 0; i < frag.childNodes.length; i++) {
+                this.childNodes.push(frag.childNodes[i])
+                if (frag.childNodes[i].nodeName !== '#text') {
+                    this.children.push(frag.childNodes[i])
+                    frag.childNodes[i].parent = this
+                }
+            }
+            frag.childNodes = []
+            frag.children = []
+        } else {
+            if (frag.parent !== null) {           // if frag was part of another frag, we remove it (appendChild is a move, not a copy)
+                frag.parent.removeChild(frag)
+            }
+            frag.parent = this
+
+            this.childNodes.push(frag)  // includes any frag children
+            if (frag.nodeName !== '#text')  // exclude text nodes from children
+                this.children.push(frag)
+        }
+        return frag
+    }
+
+
+    setAttribute(key: string, value: any): AMNode {
+        this.attributes[key] = value
+        return this
+    }
+
+    get firstChild(): AMNode {
+        if (this.childNodes.length > 0)
+            return this.childNodes[0]
+        throw new Error('No firstChild available')
+    }
+
+    get lastChild(): AMNode {
+        if (this.childNodes.length > 0)
+            return this.childNodes.at(-1)!
+        throw new Error('No lastChild available')
+    }
+
+    get tagName(): string {
+        return this.nodeName
+    }
+
+    get nextSibling(): AMNode | null {
+        if (this.parent !== null) {
+            for (let i = 0; i < this.parent.childNodes.length - 1; i++) {   // don't check the last one, it has no siblings
+                if (this.parent.childNodes[i].unique == this.unique) {
+                    return this.parent.childNodes[i + 1]
+                }
+            }
+        }
+        return null
+    }
+
+    hasChildNodes(): boolean {
+        return this.childNodes.length > 0
+    }
+
+    replaceChild(newChild: AMNode, oldChild: AMNode): AMNode {
+        for (let i = 0; i < this.childNodes.length; i++) {
+            if (oldChild.unique === this.childNodes[i].unique) {
+                this.childNodes[i] = newChild  // just reassigns the pointer
+            }
+        }
+        if (newChild.nodeName !== '#text' && newChild.nodeName !== '') {  // fragments don't go into children
+            for (let i = 0; i < this.children.length; i++) {
+                if (oldChild.unique === this.children[i].unique) {
+                    this.children[i] = newChild
+                }
+            }
+        }
+        oldChild.parent = null
+        return oldChild
+    }
+
+    removeChild(node: AMNode): AMNode {
+        let removed = false
+        for (let i = 0; i < this.childNodes.length; i++) {
+            if (node.unique == this.childNodes[i].unique) { // ||
+                this.childNodes.splice(i, 1)    // preserves iterator sequence
+                removed = true
+            }
+        }
+        if (!removed)
+            throw new Error(`Failed to execute 'removeChild'. The node to be removed is not a child of this node.)`)
+
+        for (let i = 0; i < this.children.length; i++) {
+            if (node.unique === this.children[i].unique) {
+                this.children.splice(i, 1)
+            }
+        }
+        node.parent = null
+        return node
+    }
+
+    /** turn a tree of AMNodes into an HTML string */
+    flatten(): string {
+        let html = ''
+
+        if (this.nodeName !== '#text' && this.nodeName !== '') {
+            let style = ''
+            if (this.style.fontWeight !== '' || this.style.fontStyle !== '')
+                style = ` style = "${(this.style.fontWeight !== '') ? 'font-weight:' + this.style.fontWeight + ';' : ''} ${(this.style.fontStyle !== '') ? 'font-style:' + this.style.fontStyle + ';' : ''}"`
+
+            let attributes = ''
+            for (let [key, value] of Object.entries(this.attributes))
+                attributes += ` ${key}= "${value}"`
+
+            html += `<${this.nodeName}${attributes}${style}>`
+        }
+        if (this.hasChildNodes() && this.firstChild.nodeName == '#text') {
+            html += this.firstChild.nodeValue
+        } else if (this.hasChildNodes()) {
+            for (let i = 0; i < this.children.length; i++) {
+                html += this.children[i].flatten()
+            }
+        }
+        html += `</${this.nodeName}>`
+
+        return html
+    }
+
+
+}
+
+
+
+// unicode characters for math variants. Alpha, alpha, numbers, Greek, greek, special mappings
+let codemaps: { [key: string]: any[] } = {
+    'script': [0x1D49C, 0x1D4B6, null, null, null, {
+        0x42: 0x212C, 0x45: 0x2130, 0x46: 0x2131,
+        0x48: 0x210B, 0x49: 0x2110, 0x4C: 0x2112, 0x4D: 0x2133, 0x52: 0x211B, 0x65: 0x212F,
+        0x67: 0x210A, 0x6F: 0x2134
+    }],
+    'bold-script': [0x1D4D0, 0x1D4EA],
+    'fraktur': [0x1D504, 0x1D51E, null, null, null, {
+        0x43: 0x212D, 0x48: 0x210C, 0x49: 0x2111, 0x52: 0x211C, 0x5A: 0x2128,
+    }],
+    'bold-fraktur': [0x1D56C, 0x1D586],
+    'double-struck': [0x1D538, 0x1D552, 0x1D7D8, null, null, {
+        0x43: 0x2102, 0x48: 0x210D, 0x4E: 0x2115, 0x50: 0x2119, 0x51: 0x211A, 0x52: 0x211D,
+        0x5A: 0x2124, 0x393: 0x213E, 0x3A0: 0x213F, 0x3B3: 0x213D, 0x3C0: 0x213C,
+    }],
+    'bold': [0x1D400, 0x1D41A, 0x1D7CE, 0x1D6A8, 0x1D6C2],
+    'italic': [0x1D434, 0x1D44E, null, 0x1D6E2, 0x1D6FC, { 0x68: 0x210E }],
+    'bold-italic': [0x1D468, 0x1D482, null, 0x1D71C, 0x1D736],
+    'sans-serif': [0x1D5A0, 0x1D5BA, 0x1D7E2],
+    'sans-serif-italic': [0x1D608, 0x1D622, 0x1D7E2],
+    'bold-sans-serif': [0x1D5D4, 0x1D5EE, 0x1D7EC, 0x1D756, 0x1D770],
+    'sans-serif-bold-italic': [0x1D63C, 0x1D656, 0x1D7EC, 0x1D790, 0x1D7AA],
+    'monospace': [0x1D670, 0x1D68A, 0x1D7F6]
+};
+
+// based on https://docs.mathjax.org/en/latest/advanced/synchronize/filters.html#converting-full-width-characters-to-ascii-equivalents
+let codemapranges: ([number, number] | [number, number, object])[] = [
+    [0x41, 0x5A],
+    [0x61, 0x7A],
+    [0x30, 0x39],
+    [0x391, 0x3A9, { 0x3F4: 0x3A2, 0x2207: 0x3AA }],
+    [0x3B1, 0x3C9, {
+        0x2202: 0x3CA, 0x3F5: 0x3CB, 0x3D1: 0x3CC,
+        0x3F0: 0x3CD, 0x3D5: 0x3CE, 0x3F1: 0x3CF, 0x3D6: 0x3D0
+    }],
+];
 
 type AMSymbol = {
     input: string
-    tag: 'mi' | 'mo' | 'mn' | 'mroot' | 'mfrac' | 'msup' | 'msub' | 'mover' | 'mtext' | 'msqrt' | 'munder' | 'mstyle' | 'menclose' | 'mrow'
+    tag: string // 'mi' | 'mo' | 'mn' | 'mroot' | 'mfrac' | 'msup' | 'msub' | 'mover' | 'mtext' | 'msqrt' | 'munder' | 'mstyle' | 'menclose' | 'mrow'
     output: string
-    tex: string | null
+    tex?: string | null
     ttype: number //tokenType
 
     invisible?: boolean         // all these other unreliable elements ?!?!
@@ -80,209 +256,403 @@ type AMSymbol = {
 
     atname?: "mathvariant",
     atval?: "bold" | "sans-serif" | "double-struck" | "script" | "fraktur" | "monospace"
-    codes?: string[]   // AMcal | AMfrk | AMbbb |
+    codes?: string | boolean
 }
-
-type Tag = 'div' | 'p' | 'span' | 'body' | 'a'
-
-
-// character lists for Mozilla/Netscape fonts
-let AMcal = ["\uD835\uDC9C", "\u212C", "\uD835\uDC9E", "\uD835\uDC9F", "\u2130", "\u2131", "\uD835\uDCA2", "\u210B", "\u2110", "\uD835\uDCA5", "\uD835\uDCA6", "\u2112", "\u2133", "\uD835\uDCA9", "\uD835\uDCAA", "\uD835\uDCAB", "\uD835\uDCAC", "\u211B", "\uD835\uDCAE", "\uD835\uDCAF", "\uD835\uDCB0", "\uD835\uDCB1", "\uD835\uDCB2", "\uD835\uDCB3", "\uD835\uDCB4", "\uD835\uDCB5", "\uD835\uDCB6", "\uD835\uDCB7", "\uD835\uDCB8", "\uD835\uDCB9", "\u212F", "\uD835\uDCBB", "\u210A", "\uD835\uDCBD", "\uD835\uDCBE", "\uD835\uDCBF", "\uD835\uDCC0", "\uD835\uDCC1", "\uD835\uDCC2", "\uD835\uDCC3", "\u2134", "\uD835\uDCC5", "\uD835\uDCC6", "\uD835\uDCC7", "\uD835\uDCC8", "\uD835\uDCC9", "\uD835\uDCCA", "\uD835\uDCCB", "\uD835\uDCCC", "\uD835\uDCCD", "\uD835\uDCCE", "\uD835\uDCCF"];
-
-let AMfrk = ["\uD835\uDD04", "\uD835\uDD05", "\u212D", "\uD835\uDD07", "\uD835\uDD08", "\uD835\uDD09", "\uD835\uDD0A", "\u210C", "\u2111", "\uD835\uDD0D", "\uD835\uDD0E", "\uD835\uDD0F", "\uD835\uDD10", "\uD835\uDD11", "\uD835\uDD12", "\uD835\uDD13", "\uD835\uDD14", "\u211C", "\uD835\uDD16", "\uD835\uDD17", "\uD835\uDD18", "\uD835\uDD19", "\uD835\uDD1A", "\uD835\uDD1B", "\uD835\uDD1C", "\u2128", "\uD835\uDD1E", "\uD835\uDD1F", "\uD835\uDD20", "\uD835\uDD21", "\uD835\uDD22", "\uD835\uDD23", "\uD835\uDD24", "\uD835\uDD25", "\uD835\uDD26", "\uD835\uDD27", "\uD835\uDD28", "\uD835\uDD29", "\uD835\uDD2A", "\uD835\uDD2B", "\uD835\uDD2C", "\uD835\uDD2D", "\uD835\uDD2E", "\uD835\uDD2F", "\uD835\uDD30", "\uD835\uDD31", "\uD835\uDD32", "\uD835\uDD33", "\uD835\uDD34", "\uD835\uDD35", "\uD835\uDD36", "\uD835\uDD37"];
-
-let AMbbb = ["\uD835\uDD38", "\uD835\uDD39", "\u2102", "\uD835\uDD3B", "\uD835\uDD3C", "\uD835\uDD3D", "\uD835\uDD3E", "\u210D", "\uD835\uDD40", "\uD835\uDD41", "\uD835\uDD42", "\uD835\uDD43", "\uD835\uDD44", "\u2115", "\uD835\uDD46", "\u2119", "\u211A", "\u211D", "\uD835\uDD4A", "\uD835\uDD4B", "\uD835\uDD4C", "\uD835\uDD4D", "\uD835\uDD4E", "\uD835\uDD4F", "\uD835\uDD50", "\u2124", "\uD835\uDD52", "\uD835\uDD53", "\uD835\uDD54", "\uD835\uDD55", "\uD835\uDD56", "\uD835\uDD57", "\uD835\uDD58", "\uD835\uDD59", "\uD835\uDD5A", "\uD835\uDD5B", "\uD835\uDD5C", "\uD835\uDD5D", "\uD835\uDD5E", "\uD835\uDD5F", "\uD835\uDD60", "\uD835\uDD61", "\uD835\uDD62", "\uD835\uDD63", "\uD835\uDD64", "\uD835\uDD65", "\uD835\uDD66", "\uD835\uDD67", "\uD835\uDD68", "\uD835\uDD69", "\uD835\uDD6A", "\uD835\uDD6B"];
-/*let AMcal = [0xEF35,0x212C,0xEF36,0xEF37,0x2130,0x2131,0xEF38,0x210B,0x2110,0xEF39,0xEF3A,0x2112,0x2133,0xEF3B,0xEF3C,0xEF3D,0xEF3E,0x211B,0xEF3F,0xEF40,0xEF41,0xEF42,0xEF43,0xEF44,0xEF45,0xEF46];
-let AMfrk = [0xEF5D,0xEF5E,0x212D,0xEF5F,0xEF60,0xEF61,0xEF62,0x210C,0x2111,0xEF63,0xEF64,0xEF65,0xEF66,0xEF67,0xEF68,0xEF69,0xEF6A,0x211C,0xEF6B,0xEF6C,0xEF6D,0xEF6E,0xEF6F,0xEF70,0xEF71,0x2128];
-let AMbbb = [0xEF8C,0xEF8D,0x2102,0xEF8E,0xEF8F,0xEF90,0xEF91,0x210D,0xEF92,0xEF93,0xEF94,0xEF95,0xEF96,0x2115,0xEF97,0x2119,0x211A,0x211D,0xEF98,0xEF99,0xEF9A,0xEF9B,0xEF9C,0xEF9D,0xEF9E,0x2124];*/
 
 let CONST = 0, UNARY = 1, BINARY = 2, INFIX = 3, LEFTBRACKET = 4,
     RIGHTBRACKET = 5, SPACE = 6, UNDEROVER = 7, DEFINITION = 8,
     LEFTRIGHT = 9, TEXT = 10, BIG = 11, LONG = 12, STRETCHY = 13,
     MATRIX = 14, UNARYUNDEROVER = 15; // token types
 
-let AMquote: AMSymbol = { input: "\"", tag: "mtext", output: "mbox", tex: null, ttype: TEXT };
+let AMquote = { input: "\"", tag: "mtext", output: "mbox", tex: null, ttype: TEXT };
+
+let fixphi = true;  		//false to return to legacy phi/varphi mapping
+
+let AMsymbols: AMSymbol[] = [
+    //some greek symbols
+    { input: "alpha", tag: "mi", output: "\u03B1", tex: null, ttype: CONST },
+    { input: "beta", tag: "mi", output: "\u03B2", tex: null, ttype: CONST },
+    { input: "chi", tag: "mi", output: "\u03C7", tex: null, ttype: CONST },
+    { input: "delta", tag: "mi", output: "\u03B4", tex: null, ttype: CONST },
+    { input: "Delta", tag: "mo", output: "\u0394", tex: null, ttype: CONST },
+    { input: "epsi", tag: "mi", output: "\u03B5", tex: "epsilon", ttype: CONST },
+    { input: "varepsilon", tag: "mi", output: "\u025B", tex: null, ttype: CONST },
+    { input: "eta", tag: "mi", output: "\u03B7", tex: null, ttype: CONST },
+    { input: "gamma", tag: "mi", output: "\u03B3", tex: null, ttype: CONST },
+    { input: "Gamma", tag: "mo", output: "\u0393", tex: null, ttype: CONST },
+    { input: "iota", tag: "mi", output: "\u03B9", tex: null, ttype: CONST },
+    { input: "kappa", tag: "mi", output: "\u03BA", tex: null, ttype: CONST },
+    { input: "lambda", tag: "mi", output: "\u03BB", tex: null, ttype: CONST },
+    { input: "Lambda", tag: "mo", output: "\u039B", tex: null, ttype: CONST },
+    { input: "lamda", tag: "mi", output: "\u03BB", tex: null, ttype: CONST },
+    { input: "Lamda", tag: "mo", output: "\u039B", tex: null, ttype: CONST },
+    { input: "mu", tag: "mi", output: "\u03BC", tex: null, ttype: CONST },
+    { input: "nu", tag: "mi", output: "\u03BD", tex: null, ttype: CONST },
+    { input: "omega", tag: "mi", output: "\u03C9", tex: null, ttype: CONST },
+    { input: "Omega", tag: "mo", output: "\u03A9", tex: null, ttype: CONST },
+    { input: "phi", tag: "mi", output: fixphi ? "\u03D5" : "\u03C6", tex: null, ttype: CONST },
+    { input: "varphi", tag: "mi", output: fixphi ? "\u03C6" : "\u03D5", tex: null, ttype: CONST },
+    { input: "Phi", tag: "mo", output: "\u03A6", tex: null, ttype: CONST },
+    { input: "pi", tag: "mi", output: "\u03C0", tex: null, ttype: CONST },
+    { input: "Pi", tag: "mo", output: "\u03A0", tex: null, ttype: CONST },
+    { input: "psi", tag: "mi", output: "\u03C8", tex: null, ttype: CONST },
+    { input: "Psi", tag: "mi", output: "\u03A8", tex: null, ttype: CONST },
+    { input: "rho", tag: "mi", output: "\u03C1", tex: null, ttype: CONST },
+    { input: "sigma", tag: "mi", output: "\u03C3", tex: null, ttype: CONST },
+    { input: "Sigma", tag: "mo", output: "\u03A3", tex: null, ttype: CONST },
+    { input: "tau", tag: "mi", output: "\u03C4", tex: null, ttype: CONST },
+    { input: "theta", tag: "mi", output: "\u03B8", tex: null, ttype: CONST },
+    { input: "vartheta", tag: "mi", output: "\u03D1", tex: null, ttype: CONST },
+    { input: "Theta", tag: "mo", output: "\u0398", tex: null, ttype: CONST },
+    { input: "upsilon", tag: "mi", output: "\u03C5", tex: null, ttype: CONST },
+    { input: "xi", tag: "mi", output: "\u03BE", tex: null, ttype: CONST },
+    { input: "Xi", tag: "mo", output: "\u039E", tex: null, ttype: CONST },
+    { input: "zeta", tag: "mi", output: "\u03B6", tex: null, ttype: CONST },
+
+    //binary operation symbols
+    //{input:"-",  tag:"mo", output:"\u0096", tex:null, ttype:CONST},
+    { input: "*", tag: "mo", output: "\u22C5", tex: "cdot", ttype: CONST },
+    { input: "**", tag: "mo", output: "\u2217", tex: "ast", ttype: CONST },
+    { input: "***", tag: "mo", output: "\u22C6", tex: "star", ttype: CONST },
+    { input: "//", tag: "mo", output: "/", tex: null, ttype: CONST },
+    { input: "\\\\", tag: "mo", output: "\\", tex: "backslash", ttype: CONST },
+    { input: "setminus", tag: "mo", output: "\\", tex: null, ttype: CONST },
+    { input: "xx", tag: "mo", output: "\u00D7", tex: "times", ttype: CONST },
+    { input: "|><", tag: "mo", output: "\u22C9", tex: "ltimes", ttype: CONST },
+    { input: "><|", tag: "mo", output: "\u22CA", tex: "rtimes", ttype: CONST },
+    { input: "|><|", tag: "mo", output: "\u22C8", tex: "bowtie", ttype: CONST },
+    { input: "-:", tag: "mo", output: "\u00F7", tex: "div", ttype: CONST },
+    { input: "divide", tag: "mo", output: "-:", tex: null, ttype: DEFINITION },
+    { input: "@", tag: "mo", output: "\u2218", tex: "circ", ttype: CONST },
+    { input: "o+", tag: "mo", output: "\u2295", tex: "oplus", ttype: CONST },
+    { input: "o-", tag: "mo", output: "\u2296", tex: "ominus", ttype: CONST },
+    { input: "ox", tag: "mo", output: "\u2297", tex: "otimes", ttype: CONST },
+    { input: "o.", tag: "mo", output: "\u2299", tex: "odot", ttype: CONST },
+    { input: "sum", tag: "mo", output: "\u2211", tex: null, ttype: UNDEROVER },
+    { input: "prod", tag: "mo", output: "\u220F", tex: null, ttype: UNDEROVER },
+    { input: "^^", tag: "mo", output: "\u2227", tex: "wedge", ttype: CONST },
+    { input: "^^^", tag: "mo", output: "\u22C0", tex: "bigwedge", ttype: UNDEROVER },
+    { input: "vv", tag: "mo", output: "\u2228", tex: "vee", ttype: CONST },
+    { input: "vvv", tag: "mo", output: "\u22C1", tex: "bigvee", ttype: UNDEROVER },
+    { input: "nn", tag: "mo", output: "\u2229", tex: "cap", ttype: CONST },
+    { input: "nnn", tag: "mo", output: "\u22C2", tex: "bigcap", ttype: UNDEROVER },
+    { input: "uu", tag: "mo", output: "\u222A", tex: "cup", ttype: CONST },
+    { input: "uuu", tag: "mo", output: "\u22C3", tex: "bigcup", ttype: UNDEROVER },
+    { input: "dag", tag: "mo", output: "\u2020", tex: "dagger", ttype: CONST },
+    { input: "ddag", tag: "mo", output: "\u2021", tex: "ddagger", ttype: CONST },
+
+    //binary relation symbols
+    { input: "!=", tag: "mo", output: "\u2260", tex: "ne", ttype: CONST },
+    { input: ":=", tag: "mo", output: ":=", tex: null, ttype: CONST },
+    { input: "lt", tag: "mo", output: "<", tex: null, ttype: CONST },
+    { input: "<=", tag: "mo", output: "\u2264", tex: "le", ttype: CONST },
+    { input: "lt=", tag: "mo", output: "\u2264", tex: "leq", ttype: CONST },
+    { input: "gt", tag: "mo", output: ">", tex: null, ttype: CONST },
+    { input: "mlt", tag: "mo", output: "\u226A", tex: "ll", ttype: CONST },
+    { input: ">=", tag: "mo", output: "\u2265", tex: "ge", ttype: CONST },
+    { input: "gt=", tag: "mo", output: "\u2265", tex: "geq", ttype: CONST },
+    { input: "mgt", tag: "mo", output: "\u226B", tex: "gg", ttype: CONST },
+    { input: "-<", tag: "mo", output: "\u227A", tex: "prec", ttype: CONST },
+    { input: "-lt", tag: "mo", output: "\u227A", tex: null, ttype: CONST },
+    { input: ">-", tag: "mo", output: "\u227B", tex: "succ", ttype: CONST },
+    { input: "-<=", tag: "mo", output: "\u2AAF", tex: "preceq", ttype: CONST },
+    { input: ">-=", tag: "mo", output: "\u2AB0", tex: "succeq", ttype: CONST },
+    { input: "in", tag: "mo", output: "\u2208", tex: null, ttype: CONST },
+    { input: "!in", tag: "mo", output: "\u2209", tex: "notin", ttype: CONST },
+    { input: "sub", tag: "mo", output: "\u2282", tex: "subset", ttype: CONST },
+    { input: "!sub", tag: "mo", output: "\u2284", tex: "not\\subset", ttype: CONST },
+    { input: "notsubset", tag: "mo", output: "!sub", tex: null, ttype: DEFINITION },
+    { input: "sup", tag: "mo", output: "\u2283", tex: "supset", ttype: CONST },
+    { input: "!sup", tag: "mo", output: "\u2285", tex: "not\\supset", ttype: CONST },
+    { input: "notsupset", tag: "mo", output: "!sup", tex: null, ttype: DEFINITION },
+    { input: "sube", tag: "mo", output: "\u2286", tex: "subseteq", ttype: CONST },
+    { input: "!sube", tag: "mo", output: "\u2288", tex: "not\\subseteq", ttype: CONST },
+    { input: "notsubseteq", tag: "mo", output: "!sube", tex: null, ttype: DEFINITION },
+    { input: "supe", tag: "mo", output: "\u2287", tex: "supseteq", ttype: CONST },
+    { input: "!supe", tag: "mo", output: "\u2289", tex: "not\\supseteq", ttype: CONST },
+    { input: "notsupseteq", tag: "mo", output: "!supe", tex: null, ttype: DEFINITION },
+    { input: "-=", tag: "mo", output: "\u2261", tex: "equiv", ttype: CONST },
+    { input: "!-=", tag: "mo", output: "\u2262", tex: "not\\equiv", ttype: CONST },
+    { input: "notequiv", tag: "mo", output: "!-=", tex: null, ttype: DEFINITION },
+    { input: "~=", tag: "mo", output: "\u2245", tex: "cong", ttype: CONST },
+    { input: "~~", tag: "mo", output: "\u2248", tex: "approx", ttype: CONST },
+    { input: "~", tag: "mo", output: "\u223C", tex: "sim", ttype: CONST },
+    { input: "prop", tag: "mo", output: "\u221D", tex: "propto", ttype: CONST },
+
+    //logical symbols
+    { input: "and", tag: "mtext", output: "and", tex: null, ttype: SPACE },
+    { input: "or", tag: "mtext", output: "or", tex: null, ttype: SPACE },
+    { input: "not", tag: "mo", output: "\u00AC", tex: "neg", ttype: CONST },
+    { input: "=>", tag: "mo", output: "\u21D2", tex: "implies", ttype: CONST },
+    { input: "if", tag: "mo", output: "if", tex: null, ttype: SPACE },
+    { input: "<=>", tag: "mo", output: "\u21D4", tex: "iff", ttype: CONST },
+    { input: "AA", tag: "mo", output: "\u2200", tex: "forall", ttype: CONST },
+    { input: "EE", tag: "mo", output: "\u2203", tex: "exists", ttype: CONST },
+    { input: "_|_", tag: "mo", output: "\u22A5", tex: "bot", ttype: CONST },
+    { input: "TT", tag: "mo", output: "\u22A4", tex: "top", ttype: CONST },
+    { input: "|--", tag: "mo", output: "\u22A2", tex: "vdash", ttype: CONST },
+    { input: "|==", tag: "mo", output: "\u22A8", tex: "models", ttype: CONST },
+
+    //grouping brackets
+    { input: "(", tag: "mo", output: "(", tex: "left(", ttype: LEFTBRACKET },
+    { input: ")", tag: "mo", output: ")", tex: "right)", ttype: RIGHTBRACKET },
+    { input: "[", tag: "mo", output: "[", tex: "left[", ttype: LEFTBRACKET },
+    { input: "]", tag: "mo", output: "]", tex: "right]", ttype: RIGHTBRACKET },
+    { input: "{", tag: "mo", output: "{", tex: null, ttype: LEFTBRACKET },
+    { input: "}", tag: "mo", output: "}", tex: null, ttype: RIGHTBRACKET },
+    { input: "|", tag: "mo", output: "|", tex: null, ttype: LEFTRIGHT },
+    { input: ":|:", tag: "mo", output: "|", tex: null, ttype: CONST },
+    { input: "|:", tag: "mo", output: "|", tex: null, ttype: LEFTBRACKET },
+    { input: ":|", tag: "mo", output: "|", tex: null, ttype: RIGHTBRACKET },
+    //{input:"||", tag:"mo", output:"||", tex:null, ttype:LEFTRIGHT},
+    { input: "(:", tag: "mo", output: "\u2329", tex: "langle", ttype: LEFTBRACKET },
+    { input: ":)", tag: "mo", output: "\u232A", tex: "rangle", ttype: RIGHTBRACKET },
+    { input: "<<", tag: "mo", output: "\u2329", tex: null, ttype: LEFTBRACKET },
+    { input: ">>", tag: "mo", output: "\u232A", tex: null, ttype: RIGHTBRACKET },
+    { input: "{:", tag: "mo", output: "{:", tex: null, ttype: LEFTBRACKET, invisible: true },
+    { input: ":}", tag: "mo", output: ":}", tex: null, ttype: RIGHTBRACKET, invisible: true },
+
+    //miscellaneous symbols
+    { input: "int", tag: "mo", output: "\u222B", tex: null, ttype: CONST },
+    { input: "dx", tag: "mi", output: "{:d x:}", tex: null, ttype: DEFINITION },
+    { input: "dy", tag: "mi", output: "{:d y:}", tex: null, ttype: DEFINITION },
+    { input: "dz", tag: "mi", output: "{:d z:}", tex: null, ttype: DEFINITION },
+    { input: "dt", tag: "mi", output: "{:d t:}", tex: null, ttype: DEFINITION },
+    { input: "oint", tag: "mo", output: "\u222E", tex: null, ttype: CONST },
+    { input: "del", tag: "mo", output: "\u2202", tex: "partial", ttype: CONST },
+    { input: "grad", tag: "mo", output: "\u2207", tex: "nabla", ttype: CONST },
+    { input: "+-", tag: "mo", output: "\u00B1", tex: "pm", ttype: CONST },
+    { input: "-+", tag: "mo", output: "\u2213", tex: "mp", ttype: CONST },
+    { input: "O/", tag: "mo", output: "\u2205", tex: "emptyset", ttype: CONST },
+    { input: "oo", tag: "mo", output: "\u221E", tex: "infty", ttype: CONST },
+    { input: "aleph", tag: "mo", output: "\u2135", tex: null, ttype: CONST },
+    { input: "...", tag: "mo", output: "...", tex: "ldots", ttype: CONST },
+    { input: ":.", tag: "mo", output: "\u2234", tex: "therefore", ttype: CONST },
+    { input: ":'", tag: "mo", output: "\u2235", tex: "because", ttype: CONST },
+    { input: "/_", tag: "mo", output: "\u2220", tex: "angle", ttype: CONST },
+    { input: "/_\\", tag: "mo", output: "\u25B3", tex: "triangle", ttype: CONST },
+    { input: "'", tag: "mo", output: "\u2032", tex: "prime", ttype: CONST },
+    { input: "tilde", tag: "mover", output: "~", tex: null, ttype: UNARY, acc: true },
+    { input: "\\ ", tag: "mo", output: "\u00A0", tex: null, ttype: CONST },
+    { input: "frown", tag: "mo", output: "\u2322", tex: null, ttype: CONST },
+    { input: "quad", tag: "mo", output: "\u00A0\u00A0", tex: null, ttype: CONST },
+    { input: "qquad", tag: "mo", output: "\u00A0\u00A0\u00A0\u00A0", tex: null, ttype: CONST },
+    { input: "cdots", tag: "mo", output: "\u22EF", tex: null, ttype: CONST },
+    { input: "vdots", tag: "mo", output: "\u22EE", tex: null, ttype: CONST },
+    { input: "ddots", tag: "mo", output: "\u22F1", tex: null, ttype: CONST },
+    { input: "diamond", tag: "mo", output: "\u22C4", tex: null, ttype: CONST },
+    { input: "square", tag: "mo", output: "\u25A1", tex: null, ttype: CONST },
+    { input: "|__", tag: "mo", output: "\u230A", tex: "lfloor", ttype: CONST },
+    { input: "__|", tag: "mo", output: "\u230B", tex: "rfloor", ttype: CONST },
+    { input: "|~", tag: "mo", output: "\u2308", tex: "lceiling", ttype: CONST },
+    { input: "~|", tag: "mo", output: "\u2309", tex: "rceiling", ttype: CONST },
+    { input: "CC", tag: "mo", output: "\u2102", tex: null, ttype: CONST },
+    { input: "NN", tag: "mo", output: "\u2115", tex: null, ttype: CONST },
+    { input: "QQ", tag: "mo", output: "\u211A", tex: null, ttype: CONST },
+    { input: "RR", tag: "mo", output: "\u211D", tex: null, ttype: CONST },
+    { input: "ZZ", tag: "mo", output: "\u2124", tex: null, ttype: CONST },
+    { input: "f", tag: "mi", output: "f", tex: null, ttype: UNARY, func: true },
+    { input: "g", tag: "mi", output: "g", tex: null, ttype: UNARY, func: true },
+    { input: "hbar", tag: "mo", output: "\u210F", tex: null, ttype: CONST },
+
+    //standard functions
+    { input: "lim", tag: "mo", output: "lim", tex: null, ttype: UNDEROVER },
+    { input: "Lim", tag: "mo", output: "Lim", tex: null, ttype: UNDEROVER },
+    { input: "sin", tag: "mo", output: "sin", tex: null, ttype: UNARY, func: true },
+    { input: "cos", tag: "mo", output: "cos", tex: null, ttype: UNARY, func: true },
+    { input: "tan", tag: "mo", output: "tan", tex: null, ttype: UNARY, func: true },
+    { input: "sinh", tag: "mo", output: "sinh", tex: null, ttype: UNARY, func: true },
+    { input: "cosh", tag: "mo", output: "cosh", tex: null, ttype: UNARY, func: true },
+    { input: "tanh", tag: "mo", output: "tanh", tex: null, ttype: UNARY, func: true },
+    { input: "cot", tag: "mo", output: "cot", tex: null, ttype: UNARY, func: true },
+    { input: "sec", tag: "mo", output: "sec", tex: null, ttype: UNARY, func: true },
+    { input: "csc", tag: "mo", output: "csc", tex: null, ttype: UNARY, func: true },
+    { input: "arcsin", tag: "mo", output: "arcsin", tex: null, ttype: UNARY, func: true },
+    { input: "arccos", tag: "mo", output: "arccos", tex: null, ttype: UNARY, func: true },
+    { input: "arctan", tag: "mo", output: "arctan", tex: null, ttype: UNARY, func: true },
+    { input: "arcsec", tag: "mo", output: "arcsec", tex: null, ttype: UNARY, func: true },
+    { input: "arccsc", tag: "mo", output: "arccsc", tex: null, ttype: UNARY, func: true },
+    { input: "arccot", tag: "mo", output: "arccot", tex: null, ttype: UNARY, func: true },
+    { input: "coth", tag: "mo", output: "coth", tex: null, ttype: UNARY, func: true },
+    { input: "sech", tag: "mo", output: "sech", tex: null, ttype: UNARY, func: true },
+    { input: "csch", tag: "mo", output: "csch", tex: null, ttype: UNARY, func: true },
+    { input: "exp", tag: "mo", output: "exp", tex: null, ttype: UNARY, func: true },
+    { input: "abs", tag: "mo", output: "abs", tex: null, ttype: UNARY, rewriteleftright: ["|", "|"] },
+    { input: "norm", tag: "mo", output: "norm", tex: null, ttype: UNARY, rewriteleftright: ["\u2225", "\u2225"] },
+    { input: "floor", tag: "mo", output: "floor", tex: null, ttype: UNARY, rewriteleftright: ["\u230A", "\u230B"] },
+    { input: "ceil", tag: "mo", output: "ceil", tex: null, ttype: UNARY, rewriteleftright: ["\u2308", "\u2309"] },
+    { input: "log", tag: "mo", output: "log", tex: null, ttype: UNARY, func: true },
+    { input: "ln", tag: "mo", output: "ln", tex: null, ttype: UNARY, func: true },
+    { input: "det", tag: "mo", output: "det", tex: null, ttype: UNARY, func: true },
+    { input: "dim", tag: "mo", output: "dim", tex: null, ttype: CONST },
+    { input: "mod", tag: "mo", output: "mod", tex: null, ttype: CONST },
+    { input: "gcd", tag: "mo", output: "gcd", tex: null, ttype: UNARY, func: true },
+    { input: "lcm", tag: "mo", output: "lcm", tex: null, ttype: UNARY, func: true },
+    { input: "lub", tag: "mo", output: "lub", tex: null, ttype: CONST },
+    { input: "glb", tag: "mo", output: "glb", tex: null, ttype: CONST },
+    { input: "min", tag: "mo", output: "min", tex: null, ttype: UNDEROVER },
+    { input: "max", tag: "mo", output: "max", tex: null, ttype: UNDEROVER },
+    { input: "Sin", tag: "mo", output: "Sin", tex: null, ttype: UNARY, func: true },
+    { input: "Cos", tag: "mo", output: "Cos", tex: null, ttype: UNARY, func: true },
+    { input: "Tan", tag: "mo", output: "Tan", tex: null, ttype: UNARY, func: true },
+    { input: "Arcsin", tag: "mo", output: "Arcsin", tex: null, ttype: UNARY, func: true },
+    { input: "Arccos", tag: "mo", output: "Arccos", tex: null, ttype: UNARY, func: true },
+    { input: "Arctan", tag: "mo", output: "Arctan", tex: null, ttype: UNARY, func: true },
+    { input: "Sinh", tag: "mo", output: "Sinh", tex: null, ttype: UNARY, func: true },
+    { input: "Cosh", tag: "mo", output: "Cosh", tex: null, ttype: UNARY, func: true },
+    { input: "Tanh", tag: "mo", output: "Tanh", tex: null, ttype: UNARY, func: true },
+    { input: "Cot", tag: "mo", output: "Cot", tex: null, ttype: UNARY, func: true },
+    { input: "Sec", tag: "mo", output: "Sec", tex: null, ttype: UNARY, func: true },
+    { input: "Csc", tag: "mo", output: "Csc", tex: null, ttype: UNARY, func: true },
+    { input: "Log", tag: "mo", output: "Log", tex: null, ttype: UNARY, func: true },
+    { input: "Ln", tag: "mo", output: "Ln", tex: null, ttype: UNARY, func: true },
+    { input: "Abs", tag: "mo", output: "abs", tex: null, ttype: UNARY, notexcopy: true, rewriteleftright: ["|", "|"] },
+
+    //arrows
+    { input: "uarr", tag: "mo", output: "\u2191", tex: "uparrow", ttype: CONST },
+    { input: "darr", tag: "mo", output: "\u2193", tex: "downarrow", ttype: CONST },
+    { input: "rarr", tag: "mo", output: "\u2192", tex: "rightarrow", ttype: CONST },
+    { input: "->", tag: "mo", output: "\u2192", tex: "to", ttype: CONST },
+    { input: ">->", tag: "mo", output: "\u21A3", tex: "rightarrowtail", ttype: CONST },
+    { input: "->>", tag: "mo", output: "\u21A0", tex: "twoheadrightarrow", ttype: CONST },
+    { input: ">->>", tag: "mo", output: "\u2916", tex: "twoheadrightarrowtail", ttype: CONST },
+    { input: "|->", tag: "mo", output: "\u21A6", tex: "mapsto", ttype: CONST },
+    { input: "larr", tag: "mo", output: "\u2190", tex: "leftarrow", ttype: CONST },
+    { input: "harr", tag: "mo", output: "\u2194", tex: "leftrightarrow", ttype: CONST },
+    { input: "rArr", tag: "mo", output: "\u21D2", tex: "Rightarrow", ttype: CONST },
+    { input: "lArr", tag: "mo", output: "\u21D0", tex: "Leftarrow", ttype: CONST },
+    { input: "dArr", tag: "mo", output: "\u21D3", tex: "Downarrow", ttype: CONST },
+    { input: "hArr", tag: "mo", output: "\u21D4", tex: "Leftrightarrow", ttype: CONST },
+    { input: "rightleftharpoons", tag: "mo", output: "\u21CC", tex: null, ttype: CONST },
+
+    //commands with argument
+    { input: "sqrt", tag: "msqrt", output: "sqrt", tex: null, ttype: UNARY },
+    { input: "root", tag: "mroot", output: "root", tex: null, ttype: BINARY },
+    { input: "frac", tag: "mfrac", output: "/", tex: null, ttype: BINARY },
+    { input: "/", tag: "mfrac", output: "/", tex: null, ttype: INFIX },
+    { input: "stackrel", tag: "mover", output: "stackrel", tex: null, ttype: BINARY },
+    { input: "overset", tag: "mover", output: "stackrel", tex: null, ttype: BINARY },
+    { input: "underset", tag: "munder", output: "stackrel", tex: null, ttype: BINARY },
+    { input: "_", tag: "msub", output: "_", tex: null, ttype: INFIX },
+    { input: "^", tag: "msup", output: "^", tex: null, ttype: INFIX },
+    { input: "hat", tag: "mover", output: "\u0302", tex: null, ttype: UNARY, acc: true },
+    { input: "bar", tag: "mover", output: "\u00AF", tex: "overline", ttype: UNARY, acc: true },
+    { input: "vec", tag: "mover", output: "\u2192", tex: null, ttype: UNARY, acc: true },
+    { input: "dot", tag: "mover", output: ".", tex: null, ttype: UNARY, acc: true },
+    { input: "ddot", tag: "mover", output: "..", tex: null, ttype: UNARY, acc: true },
+    { input: "overarc", tag: "mover", output: "\u23DC", tex: "overparen", ttype: UNARY, acc: true },
+    { input: "ul", tag: "munder", output: "\u0332", tex: "underline", ttype: UNARY, acc: true },
+    { input: "ubrace", tag: "munder", output: "\u23DF", tex: "underbrace", ttype: UNARYUNDEROVER, acc: true },
+    { input: "obrace", tag: "mover", output: "\u23DE", tex: "overbrace", ttype: UNARYUNDEROVER, acc: true },
+    { input: "text", tag: "mtext", output: "text", tex: null, ttype: TEXT },
+    { input: "mbox", tag: "mtext", output: "mbox", tex: null, ttype: TEXT },
+    { input: "color", tag: "mstyle", output: "", ttype: BINARY },
+    { input: "id", tag: "mrow", output: "", ttype: BINARY },
+    { input: "class", tag: "mrow", output: "", ttype: BINARY },
+    { input: "cancel", tag: "menclose", output: "cancel", tex: null, ttype: UNARY },
+    AMquote,
+    { input: "bb", tag: "", ttype: UNARY, tex: "mathbf", output: "", codes: 'bold' },
+    { input: "sf", tag: "", ttype: UNARY, tex: "mathsf", output: "", codes: 'sans-serif' },
+    { input: "sfit", tag: "", ttype: UNARY, output: "", codes: 'sans-serif-italic' },
+    { input: "bbsf", tag: "", ttype: UNARY, output: "", codes: 'bold-sans-serif' },
+    { input: "bbb", tag: "", ttype: UNARY, tex: "mathbb", output: "", codes: 'double-struck' },
+    { input: "cc", tag: "", ttype: UNARY, tex: "mathcal", output: "", codes: 'script' },
+    { input: "bbcc", tag: "", ttype: UNARY, output: "", codes: 'bold-script' },
+    { input: "tt", tag: "", ttype: UNARY, tex: "mathtt", output: "", codes: 'monospace' },
+    { input: "fr", tag: "", ttype: UNARY, tex: "mathfrak", output: "", codes: 'fraktur' },
+    { input: "bbfr", tag: "", ttype: UNARY, output: "", codes: 'bold-fraktur' },
+    { input: "bbit", tag: "", ttype: UNARY, output: "", codes: 'bold-italic' },
+    { input: "bbsfit", tag: "", ttype: UNARY, output: "", codes: 'sans-serif-bold-italic' },
+    { input: "bold", tag: "", ttype: UNARY, output: "" },
+    { input: "italic", tag: "", ttype: UNARY, tex: "mathit", output: "", codes: 'italic' }
+];
 
 
-/** convert an AsciiMath statement to MathML */
-export class AsciiMath {
+/*Parsing ASCII math expressions with the following grammar
+v ::= [A-Za-z] | greek letters | numbers | other constant symbols
+u ::= sqrt | text | bb | other unary symbols for font commands
+b ::= frac | root | stackrel         binary symbols
+l ::= ( | [ | { | (: | {:            left brackets
+r ::= ) | ] | } | :) | :}            right brackets
+S ::= v | lEr | uS | bSS             Simple expression
+I ::= S_S | S^S | S_S^S | S          Intermediate expression
+E ::= IE | I/I                       Expression
+Each terminal symbol is translated into a corresponding mathml node.*/
 
-    noMathML = false
-    translated = false
-    latex = false
 
 
-    AMnames: string[] = []; //list of input symbols
-    AMmathml = "http://www.w3.org/1998/Math/MathML";
-
-    AMnestingDepth: number
-    AMpreviousSymbol: number  // one of the
-    AMcurrentSymbol: number
+export class AMserver {
+    // <mstyle this.mathcolor="blue" fontsize="1em" mathsize="1em" fontfamily="serif" mathvariant="serif" displaystyle="true"><mrow><mo>[</mo><mtable columnlines="none none"><mtr><mtd><mi>a</mi></mtd><mtd><mi>b</mi></mtd></mtr></mtable><mo>]</mo></mrow></mstyle>
 
     mathcolor = "blue";        // change it to "" (to inherit) or another color
     mathfontsize = "1em";      // change to e.g. 1.2em for larger math
     mathfontfamily = "serif";  // change to "" to inherit (works in IE)
 
-    AMdelimiter1 = "`"    // when hunting through a doc looking for math to translate
-    AMescape1 = "\\\\`"   // can use other characters
+    AMmathml = "http://www.w3.org/1998/Math/MathML";
 
-    AMSymbols: AMSymbol[]
+    AMnestingDepth = 0
+    AMpreviousSymbol: number = -1  // eg: INFIX
+    AMcurrentSymbol: number = -1
+
+    AMnames: string[] = []; //list of input symbols
+
+    displaystyle = true;      // puts limits above and below large operators
+    showasciiformulaonhover = false; // helps students learn ASCIIMath
+    listseparator = ",";      // when decimalsign="," you can opt to use ";" as listseparator
+    decimalsign = ".";        // if "," then when writing lists or matrices put
+    addmathvariant = false;  // true to add mathvariant on font changes.
 
     constructor() {
-        this.setStylesheet("#AMMLcloseDiv \{font-size:0.8em padding-top:1em color:#014\}\n#AMMLwarningBox \{position:absolute width:100% top:0 left:0 z-index:200 text-align:center font-size:1em font-weight:bold padding:0.5em 0 0.5em 0 color:#ffc background:#c30\}")
-
-        this.initSymbols()
-        this.init()
+        this.initSymbols();
     }
 
 
-
-    /** Add a stylesheet, replacing any previous custom stylesheet (adapted from TW) */
-    setStylesheet(s: string) {
-        let id = "AMMLcustomStyleSheet";
-        let n = document.getElementById(id);
-        // if (document.createStyleSheet) {     // tbtb
-        //     // Test for IE's non-standard createStyleSheet method
-        //     if (n)
-        //         n.parentNode.removeChild(n);
-        //     // This failed without the &nbsp;
-        //     document.getElementsByTagName("head")[0].insertAdjacentHTML("beforeend", "&nbsp;<style id='" + id + "'>" + s + "</style>");    // tbtb not 'beforeEnd'
-        // } else {
-        if (n) {
-            n.replaceChild(document.createTextNode(s), n.firstChild);
-        } else {
-            n = document.createElement("style");
-            // n.type = "text/css";   //tbtb
-            n.id = id;
-            n.appendChild(document.createTextNode(s));
-            document.getElementsByTagName("head")[0].appendChild(n);
+    createMmlNode(t: string, frag?: AMNode): AMNode {
+        let node = new AMNode(t)
+        if (frag) {
+            node.appendChild(frag)
         }
-        // }
-    }
-
-
-    init() {
-        let msg, warnings = new Array();
-        if (document.getElementById == null) {
-            alert("This webpage requires a recent browser such as Mozilla Firefox");
-            return null;
-        }
-        if (checkForMathML && (msg = this.checkMathML())) warnings.push(msg);
-        if (warnings.length > 0) this.displayWarnings(warnings);
-        if (!this.noMathML) this.initSymbols();
-        return true;
-    }
-
-    checkMathML() {
-        if (navigator.appName.slice(0, 8) == "Netscape")
-            if (navigator.appVersion.slice(0, 1) >= "5") this.noMathML = null;
-            else this.noMathML = true;
-        // else if (navigator.appName.slice(0, 9) == "Microsoft")
-        //     try {
-        //         let ActiveX = new ActiveXObject("MathPlayer.Factory.1");
-        //         noMathML = null;
-        //     } catch (e) {
-        //         noMathML = true;
-        //     }
-        else if (navigator.appName.slice(0, 5) == "Opera")
-            if (navigator.appVersion.slice(0, 3) >= "9.5") this.noMathML = null;
-            else this.noMathML = true;
-
-        //noMathML = true; //uncomment to check
-        if (this.noMathML && notifyIfNoMathML) {
-            let msg = "To view the ASCIIMathML notation use Internet Explorer + MathPlayer or Mozilla Firefox 2.0 or later.";
-            if (alertIfNoMathML)
-                alert(msg);
-            else return msg;
-        }
-    }
-
-    hideWarning() {
-        let body = document.getElementsByTagName("body")[0];
-        body.removeChild(document.getElementById('AMMLwarningBox'));
-        body.onclick = null;
-    }
-
-    displayWarnings(warnings: string[]) {
-        let i, frag, nd = this.createElementXHTML("div");
-        let body = document.getElementsByTagName("body")[0];
-        body.onclick = this.hideWarning;
-        nd.id = 'AMMLwarningBox';
-        for (i = 0; i < warnings.length; i++) {
-            frag = this.createElementXHTML("div");
-            frag.appendChild(document.createTextNode(warnings[i]));
-            frag.style.paddingBottom = "1.0em";
-            nd.appendChild(frag);
-        }
-        nd.appendChild(this.createElementXHTML("p"));
-        nd.appendChild(document.createTextNode("For instructions see the "));
-        let an = this.createElementXHTML("a");
-        an.appendChild(document.createTextNode("ASCIIMathML"));
-        an.setAttribute("href", "http://asciimath.org");
-        nd.appendChild(an);
-        nd.appendChild(document.createTextNode(" homepage"));
-        an = this.createElementXHTML("div");
-        an.id = 'AMMLcloseDiv';
-        an.appendChild(document.createTextNode('(click anywhere to close this warning)'));
-        nd.appendChild(an);
-        body.insertBefore(nd, body.childNodes[0]);
-    }
-
-    /** Find and translate all math on a page.  if spanclassAM is provided then it
-     * is the tag to look for.  Perhaps 'span' is a good value.  If it is NOT
-     * provided, then we will look for AMDelimiter1 (by default a backtick)
-     */
-    translate(spanclassAM?: string) {
-        if (!this.translated) { // run this only once
-            this.translated = true;
-            let body = document.getElementsByTagName("body")[0];
-            this.AMprocessNode(body, false, spanclassAM);
-        }
-    }
-
-    createElementXHTML(t: Tag) {
-        return document.createElementNS("http://www.w3.org/1999/xhtml", t);
-    }
-
-
-    AMcreateElementMathML(t: Tag) {
-        return document.createElementNS(this.AMmathml, t);
-    }
-
-    createMmlNode(t: string, frag?: any): any {        // too many things in frag to type properly
-        let node;
-        node = document.createElementNS(this.AMmathml, t) as HTMLElement
-        if (frag) node.appendChild(frag);
         return node;
     }
 
+    /** replaces document.createTextNode() */
+    createTextNode(content: string): AMNode {
+        let newNode = new AMNode('#text', content)
+        return newNode
+    }
+
+    /** replaces document.createDocumentFragment() */
+    createDocumentFragment(): AMNode {
+        let newNode = new AMNode('')
+        return newNode
+    }
+
     newcommand(oldstr: string, newstr: string) {
-        this.AMSymbols.push({ input: oldstr, tag: "mo", output: newstr, tex: null, ttype: DEFINITION });
+        AMsymbols.push({ input: oldstr, tag: "mo", output: newstr, tex: null, ttype: DEFINITION });
         this.refreshSymbols();
     }
 
     newsymbol(symbolobj: AMSymbol) {
-        this.AMSymbols.push(symbolobj);
+        AMsymbols.push(symbolobj);
         this.refreshSymbols();
     }
 
 
-    compareNames(s1: AMSymbol, s2: AMSymbol): number {
+
+    compareNames(s1: AMSymbol, s2: AMSymbol) {
         if (s1.input > s2.input) return 1
         else return -1;
     }
 
     initSymbols() {
         let i;
-        this.loadAMSymbols()
-        let symlen = this.AMSymbols.length;
+        let symlen = AMsymbols.length;
         for (i = 0; i < symlen; i++) {
-            if (this.AMSymbols[i].tex) {
-                this.AMSymbols.push({
-                    input: this.AMSymbols[i].tex,
-                    tex: null,
-                    tag: this.AMSymbols[i].tag, output: this.AMSymbols[i].output, ttype: this.AMSymbols[i].ttype,
-                    acc: (this.AMSymbols[i].acc || false)
+            if (AMsymbols[i].tex) {
+                AMsymbols.push({
+                    input: (AMsymbols[i].tex) as string,
+                    tag: AMsymbols[i].tag, output: AMsymbols[i].output, ttype: AMsymbols[i].ttype,
+                    acc: (AMsymbols[i].acc || false), codes: (AMsymbols[i].codes || false)
                 });
             }
         }
@@ -290,29 +660,30 @@ export class AsciiMath {
     }
 
     refreshSymbols() {
-        this.AMSymbols.sort(this.compareNames);
-        for (let i = 0; i < this.AMSymbols.length; i++) this.AMnames[i] = this.AMSymbols[i].input;
+        let i;
+        AMsymbols.sort(this.compareNames);
+        for (i = 0; i < AMsymbols.length; i++) this.AMnames[i] = AMsymbols[i].input;
     }
 
     define(oldstr: string, newstr: string) {
-        this.AMSymbols.push({ input: oldstr, tag: "mo", output: newstr, tex: null, ttype: DEFINITION });
+        AMsymbols.push({ input: oldstr, tag: "mo", output: newstr, tex: null, ttype: DEFINITION });
         this.refreshSymbols(); // this may be a problem if many symbols are defined!
     }
 
     AMremoveCharsAndBlanks(str: string, n: number) {
         //remove n characters and any following blanks
-        let st;
+        let st, i;
         if (str.charAt(n) == "\\" && str.charAt(n + 1) != "\\" && str.charAt(n + 1) != " ")
             st = str.slice(n + 1);
         else st = str.slice(n);
-        let i       // tbtb must NOT be defined in the for loop, goes out of scope
-        for (i = 0; i < st.length && st.charCodeAt(i) <= 32; i = i + 1) { }
-        return st.slice(i);   // tbtb  ?? this isn't valid TS, not sure what it means in JS
+        for (i = 0; i < st.length && st.charCodeAt(i) <= 32; i = i + 1);
+        return st.slice(i);
     }
 
     position(arr: string[], str: string, n: number) {
         // return position >=n where str appears or would be inserted
         // assumes arr is sorted
+        let i
         if (n == 0) {
             let h, m;
             n = -1;
@@ -322,11 +693,10 @@ export class AsciiMath {
                 if (arr[m] < str) n = m; else h = m;
             }
             return h;
-        } else {
-            let i
-            for (i = n; i < arr.length && arr[i] < str; i++) { } // stops when it stops
-            return i; // i=arr.length || arr[i]>=str
-        }
+        } else
+            for (i = n; i < arr.length && arr[i] < str; i++);
+
+        return i; // i=arr.length || arr[i]>=str
     }
 
     AMgetSymbol(str: string): AMSymbol {
@@ -334,9 +704,9 @@ export class AsciiMath {
         //return null if there is none
         let k = 0; //new pos
         let j = 0; //old pos
-        let mk; //match pos
-        let st: string;
-        let tagst: 'mn' | 'mo' | 'mi'
+        let mk = -1; //match pos
+        let st;
+        let tagst;
         let match = "";
         let more = true;
         for (let i = 1; i <= str.length && more; i++) {
@@ -352,23 +722,30 @@ export class AsciiMath {
         }
         this.AMpreviousSymbol = this.AMcurrentSymbol;
         if (match != "") {
-            this.AMcurrentSymbol = this.AMSymbols[mk].ttype;
-            return this.AMSymbols[mk];
+            this.AMcurrentSymbol = AMsymbols[mk].ttype;
+            return AMsymbols[mk];
         }
         // if str[0] is a digit or - return maxsubstring of digits.digits
         this.AMcurrentSymbol = CONST;
         k = 1;
+        let useddecimal = false;
         st = str.slice(0, 1);
         let integ = true;
         while ("0" <= st && st <= "9" && k <= str.length) {
             st = str.slice(k, k + 1);
             k++;
         }
-        if (st == decimalsign) {
+        if (st == this.decimalsign) {
             st = str.slice(k, k + 1);
+            if (k > 1 && (this.decimalsign != this.listseparator || st != " ") && k < str.length) {
+                k++;
+                useddecimal = true;
+            }
             if ("0" <= st && st <= "9") {
                 integ = false;
-                k++;
+                if (!useddecimal) {
+                    k++;
+                }
                 while ("0" <= st && st <= "9" && k <= str.length) {
                     st = str.slice(k, k + 1);
                     k++;
@@ -385,13 +762,14 @@ export class AsciiMath {
         }
         if (st == "-" && str.charAt(1) !== ' ' && this.AMpreviousSymbol == INFIX) {
             this.AMcurrentSymbol = INFIX;  //trick "/" into recognizing "-" on second parse
-            return { input: st, tag: tagst, output: st, tex: null, ttype: UNARY, func: true };
+            return { input: st, tag: tagst, output: st == "-" ? "\u2212" : st, ttype: UNARY, func: true };
         }
-        return { input: st, tag: tagst, output: st, tex: null, ttype: CONST };
+        return { input: st, tag: tagst, output: st == "-" ? "\u2212" : st, ttype: CONST };
     }
 
-    AMremoveBrackets(node: Node) {
+    AMremoveBrackets(node: AMNode) {
         let st;
+        // inserted lots of ! overrides because if hasChildNodes() is true then firstChild and lastChild must exist
         if (!node.hasChildNodes()) { return; }
         if (node.firstChild.hasChildNodes() && (node.nodeName == "mrow" || node.nodeName == "M:MROW")) {
             if (node.firstChild.nextSibling && node.firstChild.nextSibling.nodeName == "mtable") { return; }
@@ -400,29 +778,24 @@ export class AsciiMath {
         }
         if (node.lastChild.hasChildNodes() && (node.nodeName == "mrow" || node.nodeName == "M:MROW")) {
             st = node.lastChild.firstChild.nodeValue;
-            if (st == ")" || st == "]" || st == "}") node.removeChild(node.lastChild);
+            if (st == ")" || st == "]" || st == "}") {
+                node.removeChild(node.lastChild);
+            }
         }
     }
 
-    /*Parsing ASCII math expressions with the following grammar
-    v ::= [A-Za-z] | greek letters | numbers | other constant symbols
-    u ::= sqrt | text | bb | other unary symbols for font commands
-    b ::= frac | root | stackrel         binary symbols
-    l ::= ( | [ | { | (: | {:            left brackets
-    r ::= ) | ] | } | :) | :}            right brackets
-    S ::= v | lEr | uS | bSS             Simple expression
-    I ::= S_S | S^S | S_S^S | S          Intermediate expression
-    E ::= IE | I/I                       Expression
-    Each terminal symbol is translated into a corresponding mathml node.*/
 
-    AMparseSexpr(str: string): [Node, string] { //parses str and returns [node,tailstr]
+    AMparseSexpr(str: string): [AMNode, string] { //parses str and returns [node,tailstr]
         let symbol, node, result, i, st,// rightvert = false,
-            newFrag = document.createDocumentFragment();
+            newFrag = this.createDocumentFragment();
         str = this.AMremoveCharsAndBlanks(str, 0);
         symbol = this.AMgetSymbol(str);             //either a token or a bracket or empty
-        if (symbol == null || symbol.ttype == RIGHTBRACKET && this.AMnestingDepth > 0) {
-            return [null, str];
-        }
+
+        //// AMparsSexpr isn't allowed to return null.  not sure wht this can do.
+        // if (symbol == null || symbol.ttype == RIGHTBRACKET && this.AMnestingDepth > 0) {
+        //     return [null, str];
+        // }
+
         if (symbol.ttype == DEFINITION) {
             str = symbol.output + this.AMremoveCharsAndBlanks(str, symbol.input.length);
             symbol = this.AMgetSymbol(str);
@@ -432,7 +805,7 @@ export class AsciiMath {
             case CONST:
                 str = this.AMremoveCharsAndBlanks(str, symbol.input.length);
                 return [this.createMmlNode(symbol.tag,        //its a constant
-                    document.createTextNode(symbol.output)), str];
+                    this.createTextNode(symbol.output)), str];
             case LEFTBRACKET:   //read (expr+)
                 this.AMnestingDepth++;
                 str = this.AMremoveCharsAndBlanks(str, symbol.input.length);
@@ -441,7 +814,7 @@ export class AsciiMath {
                 if (typeof symbol.invisible == "boolean" && symbol.invisible)
                     node = this.createMmlNode("mrow", result[0]);
                 else {
-                    node = this.createMmlNode("mo", document.createTextNode(symbol.output));
+                    node = this.createMmlNode("mo", this.createTextNode(symbol.output));
                     node = this.createMmlNode("mrow", node);
                     node.appendChild(result[0]);
                 }
@@ -461,7 +834,7 @@ export class AsciiMath {
                     newFrag.appendChild(node);
                 }
                 newFrag.appendChild(
-                    this.createMmlNode(symbol.tag, document.createTextNode(st)));
+                    this.createMmlNode(symbol.tag, this.createTextNode(st)));
                 if (st.charAt(st.length - 1) == " ") {
                     node = this.createMmlNode("mspace");
                     node.setAttribute("width", "1ex");
@@ -477,20 +850,20 @@ export class AsciiMath {
                 if (result[0] == null) {
                     if (symbol.tag == "mi" || symbol.tag == "mo") {
                         return [this.createMmlNode(symbol.tag,
-                            document.createTextNode(symbol.output)), str];
+                            this.createTextNode(symbol.output)), str];
                     } else {
-                        result[0] = this.createMmlNode("mi", "");
+                        result[0] = this.createMmlNode("mi");
                     }
                 }
                 if (typeof symbol.func == "boolean" && symbol.func) { // functions hack
                     st = str.charAt(0);
-                    if (st == "^" || st == "_" || st == "/" || st == "|" || st == "," ||
+                    if (st == "^" || st == "_" || st == "/" || st == "|" || st == this.listseparator ||
                         (symbol.input.length == 1 && symbol.input.match(/\w/) && st != "(")) {
                         return [this.createMmlNode(symbol.tag,
-                            document.createTextNode(symbol.output)), str];
+                            this.createTextNode(symbol.output)), str];
                     } else {
                         node = this.createMmlNode("mrow",
-                            this.createMmlNode(symbol.tag, document.createTextNode(symbol.output)));
+                            this.createMmlNode(symbol.tag, this.createTextNode(symbol.output)));
                         node.appendChild(result[0]);
                         return [node, result[1]];
                     }
@@ -499,9 +872,9 @@ export class AsciiMath {
                 if (symbol.input == "sqrt") {           // sqrt
                     return [this.createMmlNode(symbol.tag, result[0]), result[1]];
                 } else if (typeof symbol.rewriteleftright != "undefined") {    // abs, floor, ceil
-                    node = this.createMmlNode("mrow", this.createMmlNode("mo", document.createTextNode(symbol.rewriteleftright[0])));
+                    node = this.createMmlNode("mrow", this.createMmlNode("mo", this.createTextNode(symbol.rewriteleftright[0])));
                     node.appendChild(result[0]);
-                    node.appendChild(this.createMmlNode("mo", document.createTextNode(symbol.rewriteleftright[1])));
+                    node.appendChild(this.createMmlNode("mo", this.createTextNode(symbol.rewriteleftright[1])));
                     return [node, result[1]];
                 } else if (symbol.input == "cancel") {   // cancel
                     node = this.createMmlNode(symbol.tag, result[0]);
@@ -509,51 +882,48 @@ export class AsciiMath {
                     return [node, result[1]];
                 } else if (typeof symbol.acc == "boolean" && symbol.acc) {   // accent
                     node = this.createMmlNode(symbol.tag, result[0]);
-                    let accnode = this.createMmlNode("mo", document.createTextNode(symbol.output));
+                    if (symbol.tag == 'mover' && symbol.ttype == UNARY) {
+                        node.setAttribute("accent", "true");
+                    } else if (symbol.tag == 'munder' && symbol.ttype == UNARY) {
+                        node.setAttribute("accentunder", "true");
+                    }
+                    let accnode = this.createMmlNode("mo", this.createTextNode(symbol.output));
                     if (symbol.input == "vec" && (
                         (result[0].nodeName == "mrow" && result[0].childNodes.length == 1
                             && result[0].firstChild.firstChild.nodeValue !== null
                             && result[0].firstChild.firstChild.nodeValue.length == 1) ||
-                        (result[0].firstChild.nodeValue !== null
-                            && result[0].firstChild.nodeValue.length == 1))) {
-                        accnode.setAttribute("stretchy", false);   //tbtb
+                        (result[0].firstChild && result[0].firstChild.nodeValue !== null
+                            && result[0].firstChild.nodeValue.length == 1))
+                    ) {
+                        // special case of single character base for vector accent,
+                        // where stretchy can make it look bad
+                        accnode.setAttribute("stretchy", false);
+                    } else {
+                        accnode.setAttribute("stretchy", true);
                     }
                     node.appendChild(accnode);
                     return [node, result[1]];
+                } else if (symbol.input == "bold") {
+                    result[0].style.fontWeight = "bold";
+                    return [result[0], result[1]];
+                } else if (symbol.input == "italic") {
+                    result[0].style.fontStyle = "italic";
+                    return [result[0], result[1]];
                 } else {                        // font change command
-                    if (typeof symbol.codes != "undefined") {
-                        for (i = 0; i < result[0].childNodes.length; i++)
-                            if (result[0].childNodes[i].nodeName == "mi" || result[0].nodeName == "mi") {
-                                st = (result[0].nodeName == "mi" ? result[0].firstChild.nodeValue :
-                                    result[0].childNodes[i].firstChild.nodeValue);
-                                let newst = '';   // tbtb should be string
-                                for (let j = 0; j < st.length; j++)
-                                    if (st.charCodeAt(j) > 64 && st.charCodeAt(j) < 91)
-                                        newst = newst + symbol.codes[st.charCodeAt(j) - 65];   // tbtb newst coerced to string here
-                                    else if (st.charCodeAt(j) > 96 && st.charCodeAt(j) < 123)
-                                        newst = newst + symbol.codes[st.charCodeAt(j) - 71];
-                                    else newst = newst + st.charAt(j);
-                                if (result[0].nodeName == "mi")
-                                    result[0] = this.createMmlNode("mo").
-                                        appendChild(document.createTextNode(newst));
-                                else result[0].replaceChild(this.createMmlNode("mo").
-                                    appendChild(document.createTextNode(newst)),
-                                    result[0].childNodes[i]);
-                            }
+                    if (typeof symbol.codes === 'string') {
+                        this.AMmapChars(result[0], symbol.codes, symbol.input);
                     }
-                    node = this.createMmlNode(symbol.tag, result[0]);
-                    node.setAttribute(symbol.atname, symbol.atval);
-                    return [node, result[1]];
+                    return [result[0], result[1]];
                 }
             case BINARY:
                 str = this.AMremoveCharsAndBlanks(str, symbol.input.length);
                 result = this.AMparseSexpr(str);
                 if (result[0] == null) return [this.createMmlNode("mo",
-                    document.createTextNode(symbol.input)), str];
+                    this.createTextNode(symbol.input)), str];
                 this.AMremoveBrackets(result[0]);
                 let result2 = this.AMparseSexpr(result[1]);
                 if (result2[0] == null) return [this.createMmlNode("mo",
-                    document.createTextNode(symbol.input)), str];
+                    this.createTextNode(symbol.input)), str];
                 this.AMremoveBrackets(result2[0]);
                 if (['color', 'class', 'id'].indexOf(symbol.input) >= 0) {
 
@@ -579,14 +949,14 @@ export class AsciiMath {
                 return [this.createMmlNode(symbol.tag, newFrag), result2[1]];
             case INFIX:
                 str = this.AMremoveCharsAndBlanks(str, symbol.input.length);
-                return [this.createMmlNode("mo", document.createTextNode(symbol.output)), str];
+                return [this.createMmlNode("mo", this.createTextNode(symbol.output)), str];
             case SPACE:
                 str = this.AMremoveCharsAndBlanks(str, symbol.input.length);
                 node = this.createMmlNode("mspace");
                 node.setAttribute("width", "1ex");
                 newFrag.appendChild(node);
                 newFrag.appendChild(
-                    this.createMmlNode(symbol.tag, document.createTextNode(symbol.output)));
+                    this.createMmlNode(symbol.tag, this.createTextNode(symbol.output)));
                 node = this.createMmlNode("mspace");
                 node.setAttribute("width", "1ex");
                 newFrag.appendChild(node);
@@ -600,13 +970,13 @@ export class AsciiMath {
                 st = "";
                 if (result[0].lastChild != null)
                     st = result[0].lastChild.firstChild.nodeValue;
-                if (st == "|" && str.charAt(0) !== ",") { // its an absolute value subterm
-                    node = this.createMmlNode("mo", document.createTextNode(symbol.output));
+                if (st == "|" && str.charAt(0) !== this.listseparator) { // its an absolute value subterm
+                    node = this.createMmlNode("mo", this.createTextNode(symbol.output));
                     node = this.createMmlNode("mrow", node);
                     node.appendChild(result[0]);
                     return [node, result[1]];
                 } else { // the "|" is a \mid so use unicode 2223 (divides) for spacing
-                    node = this.createMmlNode("mo", document.createTextNode("\u2223"));
+                    node = this.createMmlNode("mo", this.createTextNode("\u2223"));
                     node = this.createMmlNode("mrow", node);
                     return [node, str];
                 }
@@ -614,11 +984,59 @@ export class AsciiMath {
                 //alert("default");
                 str = this.AMremoveCharsAndBlanks(str, symbol.input.length);
                 return [this.createMmlNode(symbol.tag,        //its a constant
-                    document.createTextNode(symbol.output)), str];
+                    this.createTextNode(symbol.output)), str];
         }
     }
 
-    AMparseIexpr(str: string): [Node, string] {
+    // walks a node, and maps characters according to codemap
+    AMmapChars(node: AMNode, variant: string, inputsym: string) {
+        let tag = '';
+        let codemap = codemaps[variant];
+        if (!codemap[2] && inputsym.substring(0, 2) == 'bb') {
+            // bold but variant doesn't have symbol; use codepoint from bb codemap instead
+            codemap[2] = codemaps['bold'][2];
+        }
+        let remap = codemap[5] || {};
+        if (node.tagName) {
+            tag = node.tagName.toUpperCase();
+        }
+        if (tag == "MI" || tag == "MO" || tag == "MN" || tag == "MTEXT") {
+            if (this.addmathvariant) {
+                node.setAttribute("mathvariant", variant);
+            }
+            let st = node.firstChild.nodeValue.toString();
+            let newst = "";
+            let didmap, charcode;
+            let map: any // { [key: string]: any[] };
+            for (let j = 0; j < st.length; j++) {
+                didmap = false;
+                charcode = st.charCodeAt(j);
+                for (let k = 0; k < 5; k++) {
+                    if (!codemap[k]) { continue; }
+                    map = codemapranges[k][2] || {};
+                    if (map[charcode]) {
+                        newst += String.fromCodePoint(map[charcode] - codemapranges[k][0] + codemap[k]);
+                        didmap = true;
+                        break;
+                    } else if (charcode >= codemapranges[k][0] && charcode <= codemapranges[k][1]) {
+                        newst += String.fromCodePoint(remap[charcode] || charcode - codemapranges[k][0] + codemap[k]);
+                        didmap = true;
+                        break;
+                    }
+                }
+                if (!didmap) {
+                    newst += st.charAt(j);
+                }
+            }
+            node.replaceChild(this.createTextNode(newst), node.firstChild);
+        } else {
+            for (let i = 0; i < node.childNodes.length; i++) {
+                this.AMmapChars(node.childNodes[i], variant, inputsym);
+            }
+        }
+    }
+
+    AMparseIexpr(str: string): [AMNode, string] {
         let symbol, sym1, sym2, node, result, underover;
         str = this.AMremoveCharsAndBlanks(str, 0);
         sym1 = this.AMgetSymbol(str);
@@ -631,7 +1049,7 @@ export class AsciiMath {
             //    if (symbol.input == "/") result = AMparseIexpr(str); else ...
             result = this.AMparseSexpr(str);
             if (result[0] == null) // show box in place of missing argument
-                result[0] = this.createMmlNode("mo", document.createTextNode("\u25A1"));
+                result[0] = this.createMmlNode("mo", this.createTextNode("\u25A1"));
             else this.AMremoveBrackets(result[0]);
             str = result[1];
             //    if (symbol.input == "/") AMremoveBrackets(node);
@@ -672,11 +1090,10 @@ export class AsciiMath {
         return [node, str];
     }
 
-    AMparseExpr(str: string, rightbracket: boolean) {
-        let symbol, node, result, i,
-            newFrag = document.createDocumentFragment();
+    AMparseExpr(str: string, rightbracket = false): [AMNode, string] {
+        let symbol: AMSymbol, node: AMNode, result, i
+        let newFrag = this.createDocumentFragment();
         do {
-
             str = this.AMremoveCharsAndBlanks(str, 0);
             result = this.AMparseIexpr(str);
             node = result[0];
@@ -686,7 +1103,7 @@ export class AsciiMath {
                 str = this.AMremoveCharsAndBlanks(str, symbol.input.length);
                 result = this.AMparseIexpr(str);
                 if (result[0] == null) // show box in place of missing argument
-                    result[0] = this.createMmlNode("mo", document.createTextNode("\u25A1"));
+                    result[0] = this.createMmlNode("mo", this.createTextNode("\u25A1"));
                 else this.AMremoveBrackets(result[0]);
                 str = result[1];
                 this.AMremoveBrackets(node);
@@ -700,7 +1117,7 @@ export class AsciiMath {
             (symbol.ttype != LEFTRIGHT || rightbracket)
             || this.AMnestingDepth == 0) && symbol != null && symbol.output != "");
         if (symbol.ttype == RIGHTBRACKET || symbol.ttype == LEFTRIGHT) {
-            //    if (AMnestingDepth > 0) AMnestingDepth--;
+            //    if (this.AMnestingDepth > 0) this.AMnestingDepth--;
             let len = newFrag.childNodes.length;
             if (len > 0 && newFrag.childNodes[len - 1].nodeName == "mrow"
                 && newFrag.childNodes[len - 1].lastChild
@@ -713,32 +1130,32 @@ export class AsciiMath {
                     let left = newFrag.childNodes[len - 1].firstChild.firstChild.nodeValue;
                     if (left == "(" && right == ")" && symbol.output != "}" ||
                         left == "[" && right == "]") {
-                        let pos = []; // positions of commas
+                        let pos: number[][] = []; // positions of commas
                         let matrix = true;
                         let m = newFrag.childNodes.length;
                         for (i = 0; matrix && i < m; i = i + 2) {
                             pos[i] = [];
                             node = newFrag.childNodes[i];
                             if (matrix) matrix = node.nodeName == "mrow" &&
-                                (i == m - 1 || node.nextSibling.nodeName == "mo" &&
-                                    node.nextSibling.firstChild.nodeValue == ",") &&
-                                node.firstChild.firstChild &&
+                                (i == m - 1 || node.nextSibling!.nodeName == "mo" &&
+                                    node.nextSibling!.firstChild.nodeValue == this.listseparator) &&
+                                node.firstChild.firstChild !== null &&
                                 node.firstChild.firstChild.nodeValue == left &&
-                                node.lastChild.firstChild &&
+                                node.lastChild.firstChild !== null &&
                                 node.lastChild.firstChild.nodeValue == right;
                             if (matrix)
                                 for (let j = 0; j < node.childNodes.length; j++)
-                                    if (node.childNodes[j].firstChild.nodeValue == ",")
+                                    if (node.childNodes[j].firstChild.nodeValue == this.listseparator)
                                         pos[i][pos[i].length] = j;
                             if (matrix && i > 1) matrix = pos[i].length == pos[i - 2].length;
                         }
                         matrix = matrix && (pos.length > 1 || pos[0].length > 0);
                         let columnlines = [];
                         if (matrix) {
-                            let row, frag, n, k, table = document.createDocumentFragment();
+                            let row: AMNode, frag: AMNode, n, k, table = this.createDocumentFragment();
                             for (i = 0; i < m; i = i + 2) {
-                                row = document.createDocumentFragment();
-                                frag = document.createDocumentFragment();
+                                row = this.createDocumentFragment();
+                                frag = this.createDocumentFragment();
                                 node = newFrag.firstChild; // <mrow>(-,-,...,-,-)</mrow>
                                 n = node.childNodes.length;
                                 k = 0;
@@ -777,19 +1194,14 @@ export class AsciiMath {
             }
             str = this.AMremoveCharsAndBlanks(str, symbol.input.length);
             if (typeof symbol.invisible != "boolean" || !symbol.invisible) {
-                node = this.createMmlNode("mo", document.createTextNode(symbol.output));
+                node = this.createMmlNode("mo", this.createTextNode(symbol.output));
                 newFrag.appendChild(node);
             }
         }
         return [newFrag, str];
     }
 
-    /** Convert a single string to an HTML Element ready for insertion.
-     * let a = new AsciiMath()
-     * let eqn = 'sum_(i=1)^n i^3=((n(n+1))/2)^2'
-     * document.getElementById('insertMathHere').appendChild(a.parseMath(eqn))
-      */
-    parseMath(str: string): Element {
+    parseMath(str: string): string {
         this.AMnestingDepth = 0;
         //some basic cleanup for dealing with stuff editors like TinyMCE adds
         str = str.replace(/&nbsp;/g, "");
@@ -807,428 +1219,13 @@ export class AsciiMath {
             node.setAttribute("mathvariant", this.mathfontfamily);
         }
 
-        if (displaystyle) node.setAttribute("displaystyle", "true");
+        if (this.displaystyle)
+            node.setAttribute("displaystyle", "true");
         node = this.createMmlNode("math", node);
-        if (showasciiformulaonhover)                      //fixed by djhsu so newline
+        if (this.showasciiformulaonhover) {                     //fixed by djhsu so newline
+            node = this.createMmlNode('div', node)
             node.setAttribute("title", str.replace(/\s+/g, " "));//does not show in Gecko
-        return node;
-    }
-
-    strarr2docFrag(arr: string[], linebreaks: boolean): DocumentFragment {
-        let newFrag = document.createDocumentFragment();
-        let expr = false;
-        for (let i = 0; i < arr.length; i++) {
-            if (expr) newFrag.appendChild(this.parseMath(arr[i]));
-            else {
-                let arri = (linebreaks ? arr[i].split("\n\n") : [arr[i]]);
-                newFrag.appendChild(this.createElementXHTML("span").
-                    appendChild(document.createTextNode(arri[0])));
-                for (let j = 1; j < arri.length; j++) {
-                    newFrag.appendChild(this.createElementXHTML("p"));
-                    newFrag.appendChild(this.createElementXHTML("span").
-                        appendChild(document.createTextNode(arri[j])));
-                }
-            }
-            expr = !expr;
         }
-        return newFrag;
-    }
-
-    AMautomathrec(str: string): string {
-        //formula is a space (or start of str) followed by a maximal sequence of *two* or more tokens, possibly separated by runs of digits and/or space.
-        //tokens are single letters (except a, A, I) and ASCIIMathML tokens
-        let texcommand = "\\\\[a-zA-Z]+|\\\\\\s|";
-        let ambigAMtoken = "\\b(?:oo|lim|ln|int|oint|del|grad|aleph|prod|prop|sinh|cosh|tanh|cos|sec|pi|tt|fr|sf|sube|supe|sub|sup|det|mod|gcd|lcm|min|max|vec|ddot|ul|chi|eta|nu|mu)(?![a-z])|";
-        let englishAMtoken = "\\b(?:sum|ox|log|sin|tan|dim|hat|bar|dot)(?![a-z])|";
-        let secondenglishAMtoken = "|\\bI\\b|\\bin\\b|\\btext\\b"; // took if and or not out
-        let simpleAMtoken = "NN|ZZ|QQ|RR|CC|TT|AA|EE|sqrt|dx|dy|dz|dt|xx|vv|uu|nn|bb|cc|csc|cot|alpha|beta|delta|Delta|epsilon|gamma|Gamma|kappa|lambda|Lambda|omega|phi|Phi|Pi|psi|Psi|rho|sigma|Sigma|tau|theta|Theta|xi|Xi|zeta"; // uuu nnn?
-        let letter = "[a-zA-HJ-Z](?=(?:[^a-zA-Z]|$|" + ambigAMtoken + englishAMtoken + simpleAMtoken + "))|";
-        let token = letter + texcommand + "\\d+|[-()[\\]{}+=*&^_%\\\@/<>,\\|!:;'~]|\\.(?!(?:\x20|$))|" + ambigAMtoken + englishAMtoken + simpleAMtoken;
-        let re = new RegExp("(^|\\s)(((" + token + ")\\s?)((" + token + secondenglishAMtoken + ")\\s?)+)([,.?]?(?=\\s|$))", "g");
-        str = str.replace(re, " `$2`$7");
-        let arr = str.split(this.AMdelimiter1);
-        let re1 = new RegExp("(^|\\s)([b-zB-HJ-Z+*<>]|" + texcommand + ambigAMtoken + simpleAMtoken + ")(\\s|\\n|$)", "g");
-        let re2 = new RegExp("(^|\\s)([a-z]|" + texcommand + ambigAMtoken + simpleAMtoken + ")([,.])", "g"); // removed |\d+ for now
-        let i
-        for (i = 0; i < arr.length; i++)   //single nonenglish tokens
-            if (i % 2 == 0) {
-                arr[i] = arr[i].replace(re1, " `$2`$3");
-                arr[i] = arr[i].replace(re2, " `$2`$3");
-                arr[i] = arr[i].replace(/([{}[\]])/, "`$1`");
-            }
-        str = arr.join(this.AMdelimiter1);
-        str = str.replace(/((^|\s)\([a-zA-Z]{2,}.*?)\)`/g, "$1`)");  //fix parentheses
-        str = str.replace(/`(\((a\s|in\s))(.*?[a-zA-Z]{2,}\))/g, "$1`$3");  //fix parentheses
-        str = str.replace(/\sin`/g, "` in");
-        str = str.replace(/`(\(\w\)[,.]?(\s|\n|$))/g, "$1`");
-        str = str.replace(/`([0-9.]+|e.g|i.e)`(\.?)/gi, "$1$2");
-        str = str.replace(/`([0-9.]+:)`/g, "$1");
-        return str;
-    }
-
-    processNodeR(n: Node, linebreaks: boolean): number {
-        let mtch, str, arr, frg, i;
-        if (n.childNodes.length == 0) {
-            if ((n.nodeType != 8 || linebreaks) &&
-                n.parentNode.nodeName != "form" && n.parentNode.nodeName != "FORM" &&
-                n.parentNode.nodeName != "textarea" && n.parentNode.nodeName != "TEXTAREA"
-                /*&& n.parentNode.nodeName!="pre" && n.parentNode.nodeName!="PRE"*/) {
-                str = n.nodeValue;
-                if (!(str == null)) {
-                    str = str.replace(/\r\n\r\n/g, "\n\n");
-                    str = str.replace(/\x20+/g, " ");
-                    str = str.replace(/\s*\r\n/g, " ");
-                    if (this.latex) {
-                        // DELIMITERS:
-                        mtch = (str.indexOf("\$") == -1 ? false : true);
-                        str = str.replace(/([^\\])\$/g, "$1 \$");
-                        str = str.replace(/^\$/, " \$");	// in case \$ at start of string
-                        arr = str.split(" \$");
-                        for (i = 0; i < arr.length; i++)
-                            arr[i] = arr[i].replace(/\\\$/g, "\$");
-                    } else {
-                        mtch = false;
-                        str = str.replace(new RegExp(this.AMescape1, "g"),
-                            function () { mtch = true; return "AMescape1" });
-                        str = str.replace(/\\?end{?a?math}?/i,
-                            function () { automathrecognize = false; mtch = true; return "" });
-                        str = str.replace(/amath\b|\\begin{a?math}/i,
-                            function () { automathrecognize = true; mtch = true; return "" });
-                        arr = str.split(this.AMdelimiter1);
-                        if (automathrecognize)
-                            for (i = 0; i < arr.length; i++)
-                                if (i % 2 == 0) arr[i] = this.AMautomathrec(arr[i]);
-                        str = arr.join(this.AMdelimiter1);
-                        arr = str.split(this.AMdelimiter1);
-                        for (i = 0; i < arr.length; i++) // this is a problem ************
-                            arr[i] = arr[i].replace(/AMescape1/g, this.AMdelimiter1);
-                    }
-                    if (arr.length > 1 || mtch) {
-                        if (!this.noMathML) {
-                            frg = this.strarr2docFrag(arr, n.nodeType == 8);
-                            let len = frg.childNodes.length;
-                            n.parentNode.replaceChild(frg, n);
-                            return len - 1;
-                        } else return 0;
-                    }
-                }
-            } else return 0;
-        } else if (n.nodeName != "math") {
-            for (i = 0; i < n.childNodes.length; i++)
-                i += this.processNodeR(n.childNodes[i], linebreaks);
-        }
-        return 0;
-    }
-
-    /** hunt through a document and translate every math element.
-     * if spanclassAM is provided, then it is the <tag> that holds math (perhaps 'span'?)
-     * otherwise we go looking for AMdelimiter
-     */
-    AMprocessNode(n: HTMLElement, linebreaks: boolean, spanclassAM?: string) {
-        if (spanclassAM != null) {
-            let frag = document.getElementsByTagName(spanclassAM)
-            for (let i = 0; i < frag.length; i++)
-                if (frag[i].className == "AM")
-                    this.processNodeR(frag[i], linebreaks);
-        } else {
-            let st: string
-            try {
-                st = n.innerHTML; // look for AMdelimiter on page
-            } catch (err) { }
-            //alert(st)
-            if (st == null || /amath\b|\\begin{a?math}/i.test(st) ||
-                st.indexOf(this.AMdelimiter1 + " ") != -1 || st.slice(-1) == this.AMdelimiter1 ||
-                st.indexOf(this.AMdelimiter1 + "<") != -1 || st.indexOf(this.AMdelimiter1 + "\n") != -1) {
-                this.processNodeR(n, linebreaks);
-            }
-        }
-    }
-
-    /** load the parsing table.  Needs to be reloaded when  fixPHI is changed. */
-    loadAMSymbols() {
-        this.AMSymbols = [
-            //some greek symbols
-            { input: "alpha", tag: "mi", output: "\u03B1", tex: null, ttype: CONST },
-            { input: "beta", tag: "mi", output: "\u03B2", tex: null, ttype: CONST },
-            { input: "chi", tag: "mi", output: "\u03C7", tex: null, ttype: CONST },
-            { input: "delta", tag: "mi", output: "\u03B4", tex: null, ttype: CONST },
-            { input: "Delta", tag: "mo", output: "\u0394", tex: null, ttype: CONST },
-            { input: "epsi", tag: "mi", output: "\u03B5", tex: "epsilon", ttype: CONST },
-            { input: "varepsilon", tag: "mi", output: "\u025B", tex: null, ttype: CONST },
-            { input: "eta", tag: "mi", output: "\u03B7", tex: null, ttype: CONST },
-            { input: "gamma", tag: "mi", output: "\u03B3", tex: null, ttype: CONST },
-            { input: "Gamma", tag: "mo", output: "\u0393", tex: null, ttype: CONST },
-            { input: "iota", tag: "mi", output: "\u03B9", tex: null, ttype: CONST },
-            { input: "kappa", tag: "mi", output: "\u03BA", tex: null, ttype: CONST },
-            { input: "lambda", tag: "mi", output: "\u03BB", tex: null, ttype: CONST },
-            { input: "Lambda", tag: "mo", output: "\u039B", tex: null, ttype: CONST },
-            { input: "lamda", tag: "mi", output: "\u03BB", tex: null, ttype: CONST },
-            { input: "Lamda", tag: "mo", output: "\u039B", tex: null, ttype: CONST },
-            { input: "mu", tag: "mi", output: "\u03BC", tex: null, ttype: CONST },
-            { input: "nu", tag: "mi", output: "\u03BD", tex: null, ttype: CONST },
-            { input: "omega", tag: "mi", output: "\u03C9", tex: null, ttype: CONST },
-            { input: "Omega", tag: "mo", output: "\u03A9", tex: null, ttype: CONST },
-            { input: "phi", tag: "mi", output: fixphi ? "\u03D5" : "\u03C6", tex: null, ttype: CONST },
-            { input: "varphi", tag: "mi", output: fixphi ? "\u03C6" : "\u03D5", tex: null, ttype: CONST },
-            { input: "Phi", tag: "mo", output: "\u03A6", tex: null, ttype: CONST },
-            { input: "pi", tag: "mi", output: "\u03C0", tex: null, ttype: CONST },
-            { input: "Pi", tag: "mo", output: "\u03A0", tex: null, ttype: CONST },
-            { input: "psi", tag: "mi", output: "\u03C8", tex: null, ttype: CONST },
-            { input: "Psi", tag: "mi", output: "\u03A8", tex: null, ttype: CONST },
-            { input: "rho", tag: "mi", output: "\u03C1", tex: null, ttype: CONST },
-            { input: "sigma", tag: "mi", output: "\u03C3", tex: null, ttype: CONST },
-            { input: "Sigma", tag: "mo", output: "\u03A3", tex: null, ttype: CONST },
-            { input: "tau", tag: "mi", output: "\u03C4", tex: null, ttype: CONST },
-            { input: "theta", tag: "mi", output: "\u03B8", tex: null, ttype: CONST },
-            { input: "vartheta", tag: "mi", output: "\u03D1", tex: null, ttype: CONST },
-            { input: "Theta", tag: "mo", output: "\u0398", tex: null, ttype: CONST },
-            { input: "upsilon", tag: "mi", output: "\u03C5", tex: null, ttype: CONST },
-            { input: "xi", tag: "mi", output: "\u03BE", tex: null, ttype: CONST },
-            { input: "Xi", tag: "mo", output: "\u039E", tex: null, ttype: CONST },
-            { input: "zeta", tag: "mi", output: "\u03B6", tex: null, ttype: CONST },
-
-            //binary operation symbols
-            //{input:"-",  tag:"mo", output:"\u0096", tex:null, ttype:CONST},
-            { input: "*", tag: "mo", output: "\u22C5", tex: "cdot", ttype: CONST },
-            { input: "**", tag: "mo", output: "\u2217", tex: "ast", ttype: CONST },
-            { input: "***", tag: "mo", output: "\u22C6", tex: "star", ttype: CONST },
-            { input: "//", tag: "mo", output: "/", tex: null, ttype: CONST },
-            { input: "\\\\", tag: "mo", output: "\\", tex: "backslash", ttype: CONST },
-            { input: "setminus", tag: "mo", output: "\\", tex: null, ttype: CONST },
-            { input: "xx", tag: "mo", output: "\u00D7", tex: "times", ttype: CONST },
-            { input: "|><", tag: "mo", output: "\u22C9", tex: "ltimes", ttype: CONST },
-            { input: "><|", tag: "mo", output: "\u22CA", tex: "rtimes", ttype: CONST },
-            { input: "|><|", tag: "mo", output: "\u22C8", tex: "bowtie", ttype: CONST },
-            { input: "-:", tag: "mo", output: "\u00F7", tex: "div", ttype: CONST },
-            { input: "divide", tag: "mo", output: "-:", tex: null, ttype: DEFINITION },
-            { input: "@", tag: "mo", output: "\u2218", tex: "circ", ttype: CONST },
-            { input: "o+", tag: "mo", output: "\u2295", tex: "oplus", ttype: CONST },
-            { input: "ox", tag: "mo", output: "\u2297", tex: "otimes", ttype: CONST },
-            { input: "o.", tag: "mo", output: "\u2299", /*amparsei*/ tex: "odot", ttype: CONST },  //tbtb
-            { input: "sum", tag: "mo", output: "\u2211", tex: null, ttype: UNDEROVER },
-            { input: "prod", tag: "mo", output: "\u220F", tex: null, ttype: UNDEROVER },
-            { input: "^^", tag: "mo", output: "\u2227", tex: "wedge", ttype: CONST },
-            { input: "^^^", tag: "mo", output: "\u22C0", tex: "bigwedge", ttype: UNDEROVER },
-            { input: "vv", tag: "mo", output: "\u2228", tex: "vee", ttype: CONST },
-            { input: "vvv", tag: "mo", output: "\u22C1", tex: "bigvee", ttype: UNDEROVER },
-            { input: "nn", tag: "mo", output: "\u2229", tex: "cap", ttype: CONST },
-            { input: "nnn", tag: "mo", output: "\u22C2", tex: "bigcap", ttype: UNDEROVER },
-            { input: "uu", tag: "mo", output: "\u222A", tex: "cup", ttype: CONST },
-            { input: "uuu", tag: "mo", output: "\u22C3", tex: "bigcup", ttype: UNDEROVER },
-
-            //binary relation symbols
-            { input: "!=", tag: "mo", output: "\u2260", tex: "ne", ttype: CONST },
-            { input: ":=", tag: "mo", output: ":=", tex: null, ttype: CONST },
-            { input: "lt", tag: "mo", output: "<", tex: null, ttype: CONST },
-            { input: "<=", tag: "mo", output: "\u2264", tex: "le", ttype: CONST },
-            { input: "lt=", tag: "mo", output: "\u2264", tex: "leq", ttype: CONST },
-            { input: "gt", tag: "mo", output: ">", tex: null, ttype: CONST },
-            { input: "mlt", tag: "mo", output: "\u226A", tex: "ll", ttype: CONST },
-            { input: ">=", tag: "mo", output: "\u2265", tex: "ge", ttype: CONST },
-            { input: "gt=", tag: "mo", output: "\u2265", tex: "geq", ttype: CONST },
-            { input: "mgt", tag: "mo", output: "\u226B", tex: "gg", ttype: CONST },
-            { input: "-<", tag: "mo", output: "\u227A", tex: "prec", ttype: CONST },
-            { input: "-lt", tag: "mo", output: "\u227A", tex: null, ttype: CONST },
-            { input: ">-", tag: "mo", output: "\u227B", tex: "succ", ttype: CONST },
-            { input: "-<=", tag: "mo", output: "\u2AAF", tex: "preceq", ttype: CONST },
-            { input: ">-=", tag: "mo", output: "\u2AB0", tex: "succeq", ttype: CONST },
-            { input: "in", tag: "mo", output: "\u2208", tex: null, ttype: CONST },
-            { input: "!in", tag: "mo", output: "\u2209", tex: "notin", ttype: CONST },
-            { input: "sub", tag: "mo", output: "\u2282", tex: "subset", ttype: CONST },
-            { input: "sup", tag: "mo", output: "\u2283", tex: "supset", ttype: CONST },
-            { input: "sube", tag: "mo", output: "\u2286", tex: "subseteq", ttype: CONST },
-            { input: "supe", tag: "mo", output: "\u2287", tex: "supseteq", ttype: CONST },
-            { input: "-=", tag: "mo", output: "\u2261", tex: "equiv", ttype: CONST },
-            { input: "~=", tag: "mo", output: "\u2245", tex: "cong", ttype: CONST },
-            { input: "~~", tag: "mo", output: "\u2248", tex: "approx", ttype: CONST },
-            { input: "~", tag: "mo", output: "\u223C", tex: "sim", ttype: CONST },
-            { input: "prop", tag: "mo", output: "\u221D", tex: "propto", ttype: CONST },
-
-            //logical symbols
-            { input: "and", tag: "mtext", output: "and", tex: null, ttype: SPACE },
-            { input: "or", tag: "mtext", output: "or", tex: null, ttype: SPACE },
-            { input: "not", tag: "mo", output: "\u00AC", tex: "neg", ttype: CONST },
-            { input: "=>", tag: "mo", output: "\u21D2", tex: "implies", ttype: CONST },
-            { input: "if", tag: "mo", output: "if", tex: null, ttype: SPACE },
-            { input: "<=>", tag: "mo", output: "\u21D4", tex: "iff", ttype: CONST },
-            { input: "AA", tag: "mo", output: "\u2200", tex: "forall", ttype: CONST },
-            { input: "EE", tag: "mo", output: "\u2203", tex: "exists", ttype: CONST },
-            { input: "_|_", tag: "mo", output: "\u22A5", tex: "bot", ttype: CONST },
-            { input: "TT", tag: "mo", output: "\u22A4", tex: "top", ttype: CONST },
-            { input: "|--", tag: "mo", output: "\u22A2", tex: "vdash", ttype: CONST },
-            { input: "|==", tag: "mo", output: "\u22A8", tex: "models", ttype: CONST },
-
-            //grouping brackets
-            { input: "(", tag: "mo", output: "(", tex: "left(", ttype: LEFTBRACKET },
-            { input: ")", tag: "mo", output: ")", tex: "right)", ttype: RIGHTBRACKET },
-            { input: "[", tag: "mo", output: "[", tex: "left[", ttype: LEFTBRACKET },
-            { input: "]", tag: "mo", output: "]", tex: "right]", ttype: RIGHTBRACKET },
-            { input: "{", tag: "mo", output: "{", tex: null, ttype: LEFTBRACKET },
-            { input: "}", tag: "mo", output: "}", tex: null, ttype: RIGHTBRACKET },
-            { input: "|", tag: "mo", output: "|", tex: null, ttype: LEFTRIGHT },
-            { input: ":|:", tag: "mo", output: "|", tex: null, ttype: CONST },
-            { input: "|:", tag: "mo", output: "|", tex: null, ttype: LEFTBRACKET },
-            { input: ":|", tag: "mo", output: "|", tex: null, ttype: RIGHTBRACKET },
-            //{input:"||", tag:"mo", output:"||", tex:null, ttype:LEFTRIGHT},
-            { input: "(:", tag: "mo", output: "\u2329", tex: "langle", ttype: LEFTBRACKET },
-            { input: ":)", tag: "mo", output: "\u232A", tex: "rangle", ttype: RIGHTBRACKET },
-            { input: "<<", tag: "mo", output: "\u2329", tex: null, ttype: LEFTBRACKET },
-            { input: ">>", tag: "mo", output: "\u232A", tex: null, ttype: RIGHTBRACKET },
-            { input: "{:", tag: "mo", output: "{:", tex: null, ttype: LEFTBRACKET, invisible: true },
-            { input: ":}", tag: "mo", output: ":}", tex: null, ttype: RIGHTBRACKET, invisible: true },
-
-            //miscellaneous symbols
-            { input: "int", tag: "mo", output: "\u222B", tex: null, ttype: CONST },
-            { input: "dx", tag: "mi", output: "{:d x:}", tex: null, ttype: DEFINITION },
-            { input: "dy", tag: "mi", output: "{:d y:}", tex: null, ttype: DEFINITION },
-            { input: "dz", tag: "mi", output: "{:d z:}", tex: null, ttype: DEFINITION },
-            { input: "dt", tag: "mi", output: "{:d t:}", tex: null, ttype: DEFINITION },
-            { input: "oint", tag: "mo", output: "\u222E", tex: null, ttype: CONST },
-            { input: "del", tag: "mo", output: "\u2202", tex: "partial", ttype: CONST },
-            { input: "grad", tag: "mo", output: "\u2207", tex: "nabla", ttype: CONST },
-            { input: "+-", tag: "mo", output: "\u00B1", tex: "pm", ttype: CONST },
-            { input: "-+", tag: "mo", output: "\u2213", tex: "mp", ttype: CONST },
-            { input: "O/", tag: "mo", output: "\u2205", tex: "emptyset", ttype: CONST },
-            { input: "oo", tag: "mo", output: "\u221E", tex: "infty", ttype: CONST },
-            { input: "aleph", tag: "mo", output: "\u2135", tex: null, ttype: CONST },
-            { input: "...", tag: "mo", output: "...", tex: "ldots", ttype: CONST },
-            { input: ":.", tag: "mo", output: "\u2234", tex: "therefore", ttype: CONST },
-            { input: ":'", tag: "mo", output: "\u2235", tex: "because", ttype: CONST },
-            { input: "/_", tag: "mo", output: "\u2220", tex: "angle", ttype: CONST },
-            { input: "/_\\", tag: "mo", output: "\u25B3", tex: "triangle", ttype: CONST },
-            { input: "'", tag: "mo", output: "\u2032", tex: "prime", ttype: CONST },
-            { input: "tilde", tag: "mover", output: "~", tex: null, ttype: UNARY, acc: true },
-            { input: "\\ ", tag: "mo", output: "\u00A0", tex: null, ttype: CONST },
-            { input: "frown", tag: "mo", output: "\u2322", tex: null, ttype: CONST },
-            { input: "quad", tag: "mo", output: "\u00A0\u00A0", tex: null, ttype: CONST },
-            { input: "qquad", tag: "mo", output: "\u00A0\u00A0\u00A0\u00A0", tex: null, ttype: CONST },
-            { input: "cdots", tag: "mo", output: "\u22EF", tex: null, ttype: CONST },
-            { input: "vdots", tag: "mo", output: "\u22EE", tex: null, ttype: CONST },
-            { input: "ddots", tag: "mo", output: "\u22F1", tex: null, ttype: CONST },
-            { input: "diamond", tag: "mo", output: "\u22C4", tex: null, ttype: CONST },
-            { input: "square", tag: "mo", output: "\u25A1", tex: null, ttype: CONST },
-            { input: "|__", tag: "mo", output: "\u230A", tex: "lfloor", ttype: CONST },
-            { input: "__|", tag: "mo", output: "\u230B", tex: "rfloor", ttype: CONST },
-            { input: "|~", tag: "mo", output: "\u2308", tex: "lceiling", ttype: CONST },
-            { input: "~|", tag: "mo", output: "\u2309", tex: "rceiling", ttype: CONST },
-            { input: "CC", tag: "mo", output: "\u2102", tex: null, ttype: CONST },
-            { input: "NN", tag: "mo", output: "\u2115", tex: null, ttype: CONST },
-            { input: "QQ", tag: "mo", output: "\u211A", tex: null, ttype: CONST },
-            { input: "RR", tag: "mo", output: "\u211D", tex: null, ttype: CONST },
-            { input: "ZZ", tag: "mo", output: "\u2124", tex: null, ttype: CONST },
-            { input: "f", tag: "mi", output: "f", tex: null, ttype: UNARY, func: true },
-            { input: "g", tag: "mi", output: "g", tex: null, ttype: UNARY, func: true },
-
-            //standard functions
-            { input: "lim", tag: "mo", output: "lim", tex: null, ttype: UNDEROVER },
-            { input: "Lim", tag: "mo", output: "Lim", tex: null, ttype: UNDEROVER },
-            { input: "sin", tag: "mo", output: "sin", tex: null, ttype: UNARY, func: true },
-            { input: "cos", tag: "mo", output: "cos", tex: null, ttype: UNARY, func: true },
-            { input: "tan", tag: "mo", output: "tan", tex: null, ttype: UNARY, func: true },
-            { input: "sinh", tag: "mo", output: "sinh", tex: null, ttype: UNARY, func: true },
-            { input: "cosh", tag: "mo", output: "cosh", tex: null, ttype: UNARY, func: true },
-            { input: "tanh", tag: "mo", output: "tanh", tex: null, ttype: UNARY, func: true },
-            { input: "cot", tag: "mo", output: "cot", tex: null, ttype: UNARY, func: true },
-            { input: "sec", tag: "mo", output: "sec", tex: null, ttype: UNARY, func: true },
-            { input: "csc", tag: "mo", output: "csc", tex: null, ttype: UNARY, func: true },
-            { input: "arcsin", tag: "mo", output: "arcsin", tex: null, ttype: UNARY, func: true },
-            { input: "arccos", tag: "mo", output: "arccos", tex: null, ttype: UNARY, func: true },
-            { input: "arctan", tag: "mo", output: "arctan", tex: null, ttype: UNARY, func: true },
-            { input: "coth", tag: "mo", output: "coth", tex: null, ttype: UNARY, func: true },
-            { input: "sech", tag: "mo", output: "sech", tex: null, ttype: UNARY, func: true },
-            { input: "csch", tag: "mo", output: "csch", tex: null, ttype: UNARY, func: true },
-            { input: "exp", tag: "mo", output: "exp", tex: null, ttype: UNARY, func: true },
-            { input: "abs", tag: "mo", output: "abs", tex: null, ttype: UNARY, rewriteleftright: ["|", "|"] },
-            { input: "norm", tag: "mo", output: "norm", tex: null, ttype: UNARY, rewriteleftright: ["\u2225", "\u2225"] },
-            { input: "floor", tag: "mo", output: "floor", tex: null, ttype: UNARY, rewriteleftright: ["\u230A", "\u230B"] },
-            { input: "ceil", tag: "mo", output: "ceil", tex: null, ttype: UNARY, rewriteleftright: ["\u2308", "\u2309"] },
-            { input: "log", tag: "mo", output: "log", tex: null, ttype: UNARY, func: true },
-            { input: "ln", tag: "mo", output: "ln", tex: null, ttype: UNARY, func: true },
-            { input: "det", tag: "mo", output: "det", tex: null, ttype: UNARY, func: true },
-            { input: "dim", tag: "mo", output: "dim", tex: null, ttype: CONST },
-            { input: "mod", tag: "mo", output: "mod", tex: null, ttype: CONST },
-            { input: "gcd", tag: "mo", output: "gcd", tex: null, ttype: UNARY, func: true },
-            { input: "lcm", tag: "mo", output: "lcm", tex: null, ttype: UNARY, func: true },
-            { input: "lub", tag: "mo", output: "lub", tex: null, ttype: CONST },
-            { input: "glb", tag: "mo", output: "glb", tex: null, ttype: CONST },
-            { input: "min", tag: "mo", output: "min", tex: null, ttype: UNDEROVER },
-            { input: "max", tag: "mo", output: "max", tex: null, ttype: UNDEROVER },
-            { input: "Sin", tag: "mo", output: "Sin", tex: null, ttype: UNARY, func: true },
-            { input: "Cos", tag: "mo", output: "Cos", tex: null, ttype: UNARY, func: true },
-            { input: "Tan", tag: "mo", output: "Tan", tex: null, ttype: UNARY, func: true },
-            { input: "Arcsin", tag: "mo", output: "Arcsin", tex: null, ttype: UNARY, func: true },
-            { input: "Arccos", tag: "mo", output: "Arccos", tex: null, ttype: UNARY, func: true },
-            { input: "Arctan", tag: "mo", output: "Arctan", tex: null, ttype: UNARY, func: true },
-            { input: "Sinh", tag: "mo", output: "Sinh", tex: null, ttype: UNARY, func: true },
-            { input: "Cosh", tag: "mo", output: "Cosh", tex: null, ttype: UNARY, func: true },
-            { input: "Tanh", tag: "mo", output: "Tanh", tex: null, ttype: UNARY, func: true },
-            { input: "Cot", tag: "mo", output: "Cot", tex: null, ttype: UNARY, func: true },
-            { input: "Sec", tag: "mo", output: "Sec", tex: null, ttype: UNARY, func: true },
-            { input: "Csc", tag: "mo", output: "Csc", tex: null, ttype: UNARY, func: true },
-            { input: "Log", tag: "mo", output: "Log", tex: null, ttype: UNARY, func: true },
-            { input: "Ln", tag: "mo", output: "Ln", tex: null, ttype: UNARY, func: true },
-            { input: "Abs", tag: "mo", output: "abs", tex: null, ttype: UNARY, notexcopy: true, rewriteleftright: ["|", "|"] },
-
-            //arrows
-            { input: "uarr", tag: "mo", output: "\u2191", tex: "uparrow", ttype: CONST },
-            { input: "darr", tag: "mo", output: "\u2193", tex: "downarrow", ttype: CONST },
-            { input: "rarr", tag: "mo", output: "\u2192", tex: "rightarrow", ttype: CONST },
-            { input: "->", tag: "mo", output: "\u2192", tex: "to", ttype: CONST },
-            { input: ">->", tag: "mo", output: "\u21A3", tex: "rightarrowtail", ttype: CONST },
-            { input: "->>", tag: "mo", output: "\u21A0", tex: "twoheadrightarrow", ttype: CONST },
-            { input: ">->>", tag: "mo", output: "\u2916", tex: "twoheadrightarrowtail", ttype: CONST },
-            { input: "|->", tag: "mo", output: "\u21A6", tex: "mapsto", ttype: CONST },
-            { input: "larr", tag: "mo", output: "\u2190", tex: "leftarrow", ttype: CONST },
-            { input: "harr", tag: "mo", output: "\u2194", tex: "leftrightarrow", ttype: CONST },
-            { input: "rArr", tag: "mo", output: "\u21D2", tex: "Rightarrow", ttype: CONST },
-            { input: "lArr", tag: "mo", output: "\u21D0", tex: "Leftarrow", ttype: CONST },
-            { input: "hArr", tag: "mo", output: "\u21D4", tex: "Leftrightarrow", ttype: CONST },
-            //commands with argument
-            { input: "sqrt", tag: "msqrt", output: "sqrt", tex: null, ttype: UNARY },
-            { input: "root", tag: "mroot", output: "root", tex: null, ttype: BINARY },
-            { input: "frac", tag: "mfrac", output: "/", tex: null, ttype: BINARY },
-            { input: "/", tag: "mfrac", output: "/", tex: null, ttype: INFIX },
-            { input: "stackrel", tag: "mover", output: "stackrel", tex: null, ttype: BINARY },
-            { input: "overset", tag: "mover", output: "stackrel", tex: null, ttype: BINARY },
-            { input: "underset", tag: "munder", output: "stackrel", tex: null, ttype: BINARY },
-            { input: "_", tag: "msub", output: "_", tex: null, ttype: INFIX },
-            { input: "^", tag: "msup", output: "^", tex: null, ttype: INFIX },
-            { input: "hat", tag: "mover", output: "\u005E", tex: null, ttype: UNARY, acc: true },
-            { input: "bar", tag: "mover", output: "\u00AF", tex: "overline", ttype: UNARY, acc: true },
-            { input: "vec", tag: "mover", output: "\u2192", tex: null, ttype: UNARY, acc: true },
-            { input: "dot", tag: "mover", output: ".", tex: null, ttype: UNARY, acc: true },
-            { input: "ddot", tag: "mover", output: "..", tex: null, ttype: UNARY, acc: true },
-            { input: "overarc", tag: "mover", output: "\u23DC", tex: "overparen", ttype: UNARY, acc: true },
-            { input: "ul", tag: "munder", output: "\u0332", tex: "underline", ttype: UNARY, acc: true },
-            { input: "ubrace", tag: "munder", output: "\u23DF", tex: "underbrace", ttype: UNARYUNDEROVER, acc: true },
-            { input: "obrace", tag: "mover", output: "\u23DE", tex: "overbrace", ttype: UNARYUNDEROVER, acc: true },
-            { input: "text", tag: "mtext", output: "text", tex: null, ttype: TEXT },
-            { input: "mbox", tag: "mtext", output: "mbox", tex: null, ttype: TEXT },
-            { input: "color", tag: "mstyle", output: "", tex: null, ttype: BINARY },
-            { input: "id", tag: "mrow", output: "", tex: null, ttype: BINARY },
-            { input: "class", tag: "mrow", output: "", tex: null, ttype: BINARY },
-            { input: "cancel", tag: "menclose", output: "cancel", tex: null, ttype: UNARY },
-
-            // AMquote,
-            { input: "\"", tag: "mtext", output: "mbox", tex: null, ttype: TEXT },
-
-
-
-            { input: "bb", tag: "mstyle", atname: "mathvariant", atval: "bold", output: "bb", tex: null, ttype: UNARY },
-            { input: "mathbf", tag: "mstyle", atname: "mathvariant", atval: "bold", output: "mathbf", tex: null, ttype: UNARY },
-            { input: "sf", tag: "mstyle", atname: "mathvariant", atval: "sans-serif", output: "sf", tex: null, ttype: UNARY },
-            { input: "mathsf", tag: "mstyle", atname: "mathvariant", atval: "sans-serif", output: "mathsf", tex: null, ttype: UNARY },
-            { input: "bbb", tag: "mstyle", atname: "mathvariant", atval: "double-struck", output: "bbb", tex: null, ttype: UNARY, codes: AMbbb },
-            { input: "mathbb", tag: "mstyle", atname: "mathvariant", atval: "double-struck", output: "mathbb", tex: null, ttype: UNARY, codes: AMbbb },
-            { input: "cc", tag: "mstyle", atname: "mathvariant", atval: "script", output: "cc", tex: null, ttype: UNARY, codes: AMcal },
-            { input: "mathcal", tag: "mstyle", atname: "mathvariant", atval: "script", output: "mathcal", tex: null, ttype: UNARY, codes: AMcal },
-            { input: "tt", tag: "mstyle", atname: "mathvariant", atval: "monospace", output: "tt", tex: null, ttype: UNARY },
-            { input: "mathtt", tag: "mstyle", atname: "mathvariant", atval: "monospace", output: "mathtt", tex: null, ttype: UNARY },
-            { input: "fr", tag: "mstyle", atname: "mathvariant", atval: "fraktur", output: "fr", tex: null, ttype: UNARY, codes: AMfrk },
-            { input: "mathfrak", tag: "mstyle", atname: "mathvariant", atval: "fraktur", output: "mathfrak", tex: null, ttype: UNARY, codes: AMfrk }
-        ];
-
-
-
+        return node.flatten();
     }
 }

@@ -1,50 +1,27 @@
 asciimathml-ts
 ===========
 
-This is a quick-and-dirty port of ASCIIMathML.js into TS and NPM.
+A port of ASCIIMathML.js that converts AsciiMath equations into HTML strings, suitable for server-side.
 
-Update jan.2026:  updated tsconfig to output ES6 module and added an example.  Check the original, there seems to be new feature being added.
+ASCIIMathML compiles equations into MathML.  The original [ASCIIMathML](https://github.com/asciimath/asciimathml) used DOM nodes to process the hierarchial structure. This was convenient, since the output was a MathML node-tree.  ASCIIMathML provided MathJax-like rendering daemons.
 
-----
-
-Original Readme feb.2021
-
-Disclaimer: I'm the wrong guy to build this, I am just on day one of learning ASCIIMath. But the existing library didn't meet my needs, so I ran it through TS and posted it on NPM.
-
-It's not completely clean.  There is some confusion in the original code between DocumentFragments and strings that prevents strict TS typechecking.  I'll come back
-to that one day.
+But it is slow; compiling a moderate equation requires processing and discarding hundreds of DOM nodes.  And it can only run in the browser.  I needed a server version that compiled equations into HTML strings.
 
 
-ASCIIMathML translates from ASCIIMath to MathML.  [Check this out.](http://www1.chapman.edu/~jipsen/asciimath.html)  Cheat sheet [here.](http://asciimath.org/)
-
-
-As I write this, MathML is only supported in FireFox and Opera, but it looks as if Chrome support is [on the horizon.](https://mathml.igalia.com/)
-
-The original ASCIIMathML is here: [https://github.com/asciimath/asciimathml](https://github.com/asciimath/asciimathml)
-
-
-
-
-If you want ASCIIMath in all browsers, you need to add JAX.  Refer to [this stackoverflow](https://stackoverflow.com/questions/29682207/unable-to-render-mathml-content-in-google-chrome). But you lose many features like
-color and fonts.
-
+This version is based on the April 2026 version of ASCIIMathML, which added bold() and expands the special characters.
 
 
 
 ## Usage
 ```
-import {AsciiMath} from 'ASCIIMathML-ts'
+import { asciimath } from './asciimath.js';
+let am = new AMserver()
+html += am.parseMath('a^b +c')
 
-let a = new AsciiMath()
-
-// put an equation at <div id='testmath'>
-let eqn = 'sum_(i=1)^n i^3=((n(n+1))/2)^2'
-document.getElementById('testmath').appendChild(a.parseMath(eqn))
+let d = document.getElementById('test')
+d.innerHTML =  html
 
 
-// alternately, just translate the entire <body>
-// everything in backticks will be translated
-a.translate()
 ```
 
 
