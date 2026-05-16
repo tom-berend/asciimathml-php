@@ -1,9 +1,9 @@
 {
   "name": "asciimathml-ts",
-  "version": "2.0.0",
-  "description": "AsciiMathML converted to TS",
-  "main": "index.js",
-  "types": "index.d.ts",
+  "version": "2.0.1",
+  "description": "AsciiMathML converted to TS, suitable for server",
+  "main": "asciimath.js",
+  "types": "asciimath.d.ts",
   "scripts": {
     "build": "tsc",
     "watch": "tsc -watch"
