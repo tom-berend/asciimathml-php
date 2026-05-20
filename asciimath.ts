@@ -437,7 +437,8 @@ let AMsymbols: AMSymbol[] = [
     { input: "frown", tag: "mo", output: "\u2322", tex: null, ttype: CONST },
     { input: "quad", tag: "mo", output: "\u00A0\u00A0", tex: null, ttype: CONST },
     { input: "qquad", tag: "mo", output: "\u00A0\u00A0\u00A0\u00A0", tex: null, ttype: CONST },
-    { input: "cdots", tag: "mo", output: "\u22EF", tex: null, ttype: CONST },
+    { input: "thinspace", tag: "mspace", output: "0.17", tex: null, ttype: CONST },
+    { input: "mspace", tag: "mspace", output: "mspace", tex: null, ttype: TEXT }, { input: "cdots", tag: "mo", output: "\u22EF", tex: null, ttype: CONST },
     { input: "vdots", tag: "mo", output: "\u22EE", tex: null, ttype: CONST },
     { input: "ddots", tag: "mo", output: "\u22F1", tex: null, ttype: CONST },
     { input: "diamond", tag: "mo", output: "\u22C4", tex: null, ttype: CONST },
@@ -804,8 +805,14 @@ export class AMserver {
             case UNDEROVER:
             case CONST:
                 str = this.AMremoveCharsAndBlanks(str, symbol.input.length);
-                return [this.createMmlNode(symbol.tag,        //its a constant
-                    this.createTextNode(symbol.output)), str];
+                if (symbol.tag === 'mspace') {
+                    node = this.createMmlNode(symbol.tag);
+                    node.setAttribute("width", symbol.output + "em");
+                    return [node, str];
+                } else {
+                    return [this.createMmlNode(symbol.tag,        //its a constant
+                        this.createTextNode(symbol.output)), str];
+                }
             case LEFTBRACKET:   //read (expr+)
                 this.AMnestingDepth++;
                 str = this.AMremoveCharsAndBlanks(str, symbol.input.length);
@@ -828,6 +835,20 @@ export class AMserver {
                 else i = 0;
                 if (i == -1) i = str.length;
                 st = str.slice(1, i);
+                if (symbol.input === 'mspace') { // special case
+                    let m = st.match(/^(-?[\d\.]+)\s*(em|mu)?$/);
+                    console.log(m)
+                    if (!m) {
+                        st = "0em";
+                    } else if (!m[2] || m[2] == "mu") {
+                        st = (parseInt(m[1]) / 16) + "em";
+                    }
+                    node = this.createMmlNode(symbol.tag);
+                    node.setAttribute("width", st);
+                    str = this.AMremoveCharsAndBlanks(str, i + 1);
+                    return [node, str];
+                }
+
                 if (st.charAt(0) == " ") {
                     node = this.createMmlNode("mspace");
                     node.setAttribute("width", "1ex");
@@ -1204,9 +1225,9 @@ export class AMserver {
     parseMath(str: string): string {
         this.AMnestingDepth = 0;
         //some basic cleanup for dealing with stuff editors like TinyMCE adds
-        str = str.replace(/&nbsp;/g, "");
-        str = str.replace(/&gt;/g, ">");
-        str = str.replace(/&lt;/g, "<");
+        // str = str.replace(/&nbsp;/g, "");
+        // str = str.replace(/&gt;/g, ">");
+        // str = str.replace(/&lt;/g, "<");
         let frag = this.AMparseExpr(str.replace(/^\s+/g, ""), false)[0];
         let node = this.createMmlNode("mstyle", frag);
         if (this.mathcolor != "") node.setAttribute("mathcolor", this.mathcolor);

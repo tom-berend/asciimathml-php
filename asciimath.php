@@ -492,6 +492,8 @@ $AMsymbols = [
     [ 'input' => "frown", 'tag' => "mo", 'output' => "\u2322", 'tex' => null, 'ttype' => $CONST ],
     [ 'input' => "quad", 'tag' => "mo", 'output' => "\u00A0\u00A0", 'tex' => null, 'ttype' => $CONST ],
     [ 'input' => "qquad", 'tag' => "mo", 'output' => "\u00A0\u00A0\u00A0\u00A0", 'tex' => null, 'ttype' => $CONST ],
+    ['input'=>"thinspace", 'tag'=>"mspace", 'output'=>"0.17", 'tex'=>null, 'ttype'=>$CONST],
+    ['input'=>"mspace", 'tag'=>"mspace", 'output'=>"mspace", 'tex'=>null, 'ttype'=>$TEXT],
     [ 'input' => "cdots", 'tag' => "mo", 'output' => "\u22EF", 'tex' => null, 'ttype' => $CONST ],
     [ 'input' => "vdots", 'tag' => "mo", 'output' => "\u22EE", 'tex' => null, 'ttype' => $CONST ],
     [ 'input' => "ddots", 'tag' => "mo", 'output' => "\u22F1", 'tex' => null, 'ttype' => $CONST ],
@@ -662,54 +664,59 @@ class AMserver {
     }
 
 
-    function createMmlNode(t: string, $frag?: AMNode): AMNode {
-        $node = new AMNode(t)
+    function createMmlNode(string $t, AMNode $frag = false): AMNode {
+        $node = new AMNode($t);
         if ($frag) {
-            node->appendChild($frag)
+            node->appendChild($frag);
         }
         return node;
     }
 
 
     /** replaces document->createTextNode() */
-    function createTextNode(content: string): AMNode {
-        $newNode = new AMNode('#text', content)
-        return newNode
+    function createTextNode(string $content): AMNode {
+        $newNode = new AMNode('#text', $content);
+        return newNode;
     }
 
     /** replaces document->createDocumentFragment() */
     function createDocumentFragment(): AMNode {
-        $newNode = new AMNode('')
-        return newNode
+        $newNode = new AMNode('');
+        return newNode;
     }
 
-    function newcommand(oldstr: string, newstr: string) {
-        AMsymbols->push({ input: oldstr, tag: "mo", output: newstr, tex: null, ttype: $DEFINITION });
+    function newcommand(string $oldstr, string $newstr) {
+        AMsymbols->push([ 'input' => oldstr, 'tag'=> "mo", 'output' => newstr, 'tex'=> null, 'ttype'=> $DEFINITION ]);
         $this->refreshSymbols();
     }
 
-    function newsymbol(symbolobj: AMSymbol) {
-        AMsymbols->push(symbolobj);
+    function newsymbol($symbolobj) {
+        AMsymbols->push($symbolobj);
         $this->refreshSymbols();
     }
 
 
-
-    function compareNames(s1: AMSymbol, s2: AMSymbol) {
-        if (s1->input > s2->input) return 1
-        else return -1;
-    }
+    function compareNames($s1, $s2) {
+        if ($s1['input'] > $s2['input']){
+             return 1;
+             }
+             else{
+                 return -1;
+    }}
 
     function initSymbols() {
         $i;
-        $symlen = AMsymbols->length;
-        for ($i = 0; $i < symlen; $i++) {
-            if (AMsymbols[$i]->tex) {
-                AMsymbols->push({
-                    input: (AMsymbols[$i]->tex) as string,
-                    tag: AMsymbols[$i]->tag, output: AMsymbols[$i]->output, ttype: AMsymbols[$i]->ttype,
-                    acc: (AMsymbols[$i]->acc or false), codes: (AMsymbols[$i]->codes or false)
-                });
+        $symlen = count($AMsymbols);
+        for ($i = 0; $i < $symlen; $i++) {
+            if ($AMsymbols[$i]['tex']) {
+                $AMsymbols->push(
+                    ['input'=> $AMsymbols[$i]['tex'] ?? '' ,
+                    'tag'=> $AMsymbols[$i]['tag'],
+                    'output'=> $AMsymbols[$i]['output'],
+                    'ttype'=> $AMsymbols[$i]['ttype'],
+                    'acc'=> $AMsymbols[$i]['acc'] ?? false,
+                    'codes'=> $AMsymbols[$i]['codes'] ?? false,
+                ]);
             }
         }
         $this->refreshSymbols();
@@ -717,271 +724,288 @@ class AMserver {
 
     function refreshSymbols() {
         $i;
-        AMsymbols->sort($this->compareNames);
-        for ($i = 0; $i < AMsymbols->length; $i++) $this->AMnames[$i] = AMsymbols[$i]->input;
+        usort($AMsymbol, $this->compareNames);
+        for ($i = 0; $i < count($AMsymbols); $i++)
+            $this->AMnames[$i] = AMsymbols[$i]['input'];
     }
 
-    function define(oldstr: string, newstr: string) {
-        AMsymbols->push({ input: oldstr, tag: "mo", output: newstr, tex: null, ttype: $DEFINITION });
+    function define(string $oldstr, string $newstr) {
+        AMsymbols->push([ 'input'=> $oldstr, 'tag'=> "mo", 'output'=> $newstr, 'tex'=> null, 'ttype'=> $DEFINITION ]);
         $this->refreshSymbols(); // $this may be a problem if many symbols are defined!
     }
 
-    function AMremoveCharsAndBlanks(str: string, n: number) {
+    function AMremoveCharsAndBlanks(string $str, int $n) {
         //remove n characters and any following blanks
-        $st, $i;
-        if (str->charAt(n) == "\\" and str->charAt(n + 1) != "\\" and str->charAt(n + 1) != " ")
-            st = str->slice(n + 1);
-        else st = str->slice(n);
-        for ($i = 0; $i < st->length and st->charCodeAt($i) <= 32; $i = $i + 1);
-        return st->slice($i);
+        if ($str->charAt($n) == "\\" and str->charAt($n + 1) != "\\" and str->charAt($n + 1) != " ")
+            $st = substr($str,$n,1);
+        else $st = substr($str,$n);
+        for ($i = 0; $i < $st->length and $st->charCodeAt($i) <= 32; $i = $i + 1);
+        return substr($st,$i);
     }
 
-    function position(arr: string[], str: string, n: number) {
+    function position(stringn $arr,string $str, int $n) {
         // return position >=n where str appears or would be inserted
         // assumes arr is sorted
-        $i
-        if (n == 0) {
-            $h, m;
-            n = -1;
-            h = arr->length;
-            while (n + 1 < h) {
-                m = (n + h) >> 1;
-                if (arr[m] < str) n = m; else h = m;
+        if ($n == 0) {
+            $n = -1;
+            $h = $arr->length;
+            while ($n + 1 < $h) {
+                $m = ($n + $h) >> 1;
+                if (arr[$m] < $str) $n = $m; else $h = $m;
             }
-            return h;
+            return $h;
         } else
-            for ($i = n; $i < arr->length and arr[$i] < str; $i++);
+            for ($i = $n; $i < strlen($arr) and $arr[$i] < $str; $i++);
 
         return $i; // $i=arr->length or arr[$i]>=str
     }
 
-    function AMgetSymbol(str: string): AMSymbol {
+    function AMgetSymbol(string $str): AMSymbol {
         //return maximal initial substring of str that appears in names
         //return null if there is none
         $k = 0; //new pos
         $j = 0; //old pos
         $mk = -1; //match pos
         $st;
-        $tagst;
+        $$tagst;
         $match = "";
         $more = true;
-        for ($i = 1; $i <= str->length and more; $i++) {
-            st = str->slice(0, $i); //initial substring of length $i
-            j = k;
-            k = $this->position($this->AMnames, st, j);
-            if (k < $this->AMnames->length and str->slice(0, $this->AMnames[k]->length) == $this->AMnames[k]) {
-                match = $this->AMnames[k];
-                mk = k;
-                $i = match->length;
+        for ($i = 1; $i <= strlen($str) and more; $i++) {
+            $st = substr($str,0, $i); //initial substring of length $i
+            $j =$k;
+            $k = $this->position($this->AMnames, $st, $j);
+            if (k < count($this->AMnames) and substr($str,0, strlen($this->AMnames[k])) == $this->AMnames[k]) {
+                $match = $this->AMnames[$k];
+                $mk = $k;
+                $i = strlen($match);
             }
-            more = k < $this->AMnames->length and str->slice(0, $this->AMnames[k]->length) >= $this->AMnames[k];
+            $more = $k < strlen($this->AMnames) and str->slice(0, $this->AMnames[k]->length) >= $this->AMnames[k];
         }
         $this->AMpreviousSymbol = $this->AMcurrentSymbol;
-        if (match != "") {
-            $this->AMcurrentSymbol = AMsymbols[mk]->ttype;
-            return AMsymbols[mk];
+        if ($match != "") {
+            $this->AMcurrentSymbol = AMsymbols[$mk]['ttype'];
+            return AMsymbols[$mk];
         }
         // if str[0] is a digit or - return maxsubstring of digits->digits
         $this->AMcurrentSymbol = $CONST;
-        k = 1;
+        $k = 1;
         $useddecimal = false;
-        st = str->slice(0, 1);
+        $st = substr($str,0, 1);
         $integ = true;
-        while ("0" <= st and st <= "9" and k <= str->length) {
-            st = str->slice(k, k + 1);
-            k++;
+        while ("0" <= $st and $st <= "9" and $k <= strlen($str)) {
+            $st = substr($str,$k, $k + 1);
+            $k++;
         }
-        if (st == $this->decimalsign) {
-            st = str->slice(k, k + 1);
-            if (k > 1 and ($this->decimalsign != $this->listseparator or st != " ") and k < str->length) {
-                k++;
-                useddecimal = true;
+        if ($st == $this->decimalsign) {
+            $st = substr($str,$k, $k + 1);
+            if ($k > 1 and ($this->decimalsign != $this->listseparator or $st != " ") and $k < strlen($str)) {
+                $k++;
+                $useddecimal = true;
             }
-            if ("0" <= st and st <= "9") {
-                integ = false;
-                if (!useddecimal) {
-                    k++;
+            if ("0" <= $st and $st <= "9") {
+                $integ = false;
+                if (!$useddecimal) {
+                    $k++;
                 }
-                while ("0" <= st and st <= "9" and k <= str->length) {
-                    st = str->slice(k, k + 1);
-                    k++;
+                while ("0" <= $st and $st <= "9" and $k <= strlen($str)) {
+                    $st = substr($str,$k, $k + 1);
+                    $k++;
                 }
             }
         }
-        if ((integ and k > 1) or k > 2) {
-            st = str->slice(0, k - 1);
-            tagst = "mn";
+        if (($integ and $k > 1) or $k > 2) {
+            $st = substr($str,0, $k - 1);
+            $tagst = "mn";
         } else {
-            k = 2;
-            st = str->slice(0, 1); //take 1 character
-            tagst = (("A" > st or st > "Z") and ("a" > st or st > "z") ? "mo" : "mi");
+            $k = 2;
+            $st = substr($str,0, 1); //take 1 character
+            $tagst = (("A" > $st or $st > "Z") and ("a" > $st or $st > "z") ? "mo" : "mi");
         }
-        if (st == "-" and str->charAt(1) !== ' ' and $this->AMpreviousSymbol == $INFIX) {
+        if ($st == "-" and $str[charAt(1)] !== ' ' and $this->AMpreviousSymbol == $INFIX) {
             $this->AMcurrentSymbol = $INFIX;  //trick "/" into recognizing "-" on second parse
-            return { input: st, tag: tagst, output: st == "-" ? "\u2212" : st, ttype: $UNARY, func: true };
+            return [ 'input'=> $st, 'tag'=> $tagst, 'output'=> ($st == "-" ? "\u2212" : $st), 'ttype'=> $UNARY, 'func'=> true ];
         }
-        return { input: st, tag: tagst, output: st == "-" ? "\u2212" : st, ttype: $CONST };
+        return [ 'input'=> $st, 'tag'=> $tagst, 'output'=> ($st == "-" ? "\u2212" : $st), 'ttype'=> $CONST ];
     }
 
-    function AMremoveBrackets(node: AMNode) {
+    function AMremoveBrackets(AMNode $node) {
         $st;
         // inserted lots of ! overrides because if hasChildNodes() is true then firstChild() and lastChild() must exist
-        if (!node->hasChildNodes()) { return; }
-        if (node->firstChild()->hasChildNodes() and (node->nodeName == "mrow" or node->nodeName == "M:MROW")) {
-            if (node->firstChild()->nextSibling() and node->firstChild()->nextSibling()->nodeName == "mtable") { return; }
-            st = node->firstChild()->firstChild()->nodeValue;
-            if (st == "(" or st == "[" or st == "{") node->removeChild(node->firstChild());
+        if (!$node->hasChildNodes()) { return; }
+        if ($node->firstChild()->hasChildNodes() and ($node->nodeName == "mrow" or $node->nodeName == "M:MROW")) {
+            if ($node->firstChild()->nextSibling() and $node->firstChild()->nextSibling()->nodeName == "mtable") { return; }
+            $st = $node->firstChild()->firstChild()->nodeValue;
+            if ($st == "(" or $st == "[" or $st == "{") $node->removeChild($node->firstChild());
         }
-        if (node->lastChild()->hasChildNodes() and (node->nodeName == "mrow" or node->nodeName == "M:MROW")) {
-            st = node->lastChild()->firstChild()->nodeValue;
-            if (st == ")" or st == "]" or st == "}") {
-                node->removeChild(node->lastChild());
+        if ($node->lastChild()->hasChildNodes() and ($node->nodeName == "mrow" or $node->nodeName == "M:MROW")) {
+            $st = $node->lastChild()->firstChild()->nodeValue;
+            if ($st == ")" or $st == "]" or $st == "}") {
+                $node->removeChild($node->lastChild());
             }
         }
     }
 
 
-    function AMparseSexpr(str: string): [AMNode, string] { //parses str and returns [node,tailstr]
-        $symbol, node, result, $i, st,// rightvert = false,
-            newFrag = $this->createDocumentFragment();
-        str = $this->AMremoveCharsAndBlanks(str, 0);
-        symbol = $this->AMgetSymbol(str);             //either a token or a bracket or empty
+    function AMparseSexpr(string $str) /*: [AMNode, string]*/ { //parses str and returns [$node,tailstr]
+            $newFrag = $this->createDocumentFragment();
+        $str = $this->AMremoveCharsAndBlanks(str, 0);
+        $symbol = $this->AMgetSymbol($str);             //either a token or a bracket or empty
 
         //// AMparsSexpr isn't allowed to return null->  not sure wht $this can do->
-        // if (symbol == null or symbol->ttype == $RIGHTBRACKET and $this->AMnestingDepth > 0) {
+        // if (symbol == null or symbol['ttype'] == $RIGHTBRACKET and $this->AMnestingDepth > 0) {
         //     return [null, str];
         // }
 
-        if (symbol->ttype == $DEFINITION) {
-            str = symbol->output + $this->AMremoveCharsAndBlanks(str, symbol->input->length);
-            symbol = $this->AMgetSymbol(str);
+        if ($symbol['ttype'] == $DEFINITION) {
+            $str = $symbol['output'] + $this->AMremoveCharsAndBlanks($str, strlen($symbol['input']));
+            $symbol = $this->AMgetSymbol(str);
         }
-        switch (symbol->ttype) {
+        switch ($symbol['ttype']) {
             case $UNDEROVER:
             case $CONST:
-                str = $this->AMremoveCharsAndBlanks(str, symbol->input->length);
-                return [$this->createMmlNode(symbol->tag,        //its a constant
-                    $this->createTextNode(symbol->output)), str];
+                $str = $this->AMremoveCharsAndBlanks($str, strlen($symbol['input']));
+                return [$this->createMmlNode($symbol['tag'],        //its a constant
+                    $this->createTextNode($symbol['output'])), str];
             case $LEFTBRACKET:   //read (expr+)
                 $this->AMnestingDepth++;
-                str = $this->AMremoveCharsAndBlanks(str, symbol->input->length);
-                result = $this->AMparseExpr(str, true);
-                $this->AMnestingDepth--;
-                if (typeof symbol->invisible == "boolean" and symbol->invisible)
-                    node = $this->createMmlNode("mrow", result[0]);
+                $str = $this->AMremoveCharsAndBlanks($str, strlen($symbol['input']));
+                if ($symbol['tag'] === 'mspace') {
+                    $node = this.createMmlNode($symbol['tag']);
+                    $node.setAttribute("width", $symbol['output'] + "em");
+                    return [$node, $str];
+                } else {
+                $result = $this->AMparseExpr(str, true);
+                                }
+                                                $this->AMnestingDepth--;
+                if ( $symbol->invisible)
+                    $node = $this->createMmlNode("mrow", $result[0]);
                 else {
-                    node = $this->createMmlNode("mo", $this->createTextNode(symbol->output));
-                    node = $this->createMmlNode("mrow", node);
-                    node->appendChild(result[0]);
+                    $node = $this->createMmlNode("mo", $this->createTextNode($symbol['output']));
+                    $node = $this->createMmlNode("mrow", $node);
+                    $node->appendChild($result[0]);
                 }
-                return [node, result[1]];
+                return [$node, $result[1]];
             case TEXT:
-                if (symbol != AMquote) str = $this->AMremoveCharsAndBlanks(str, symbol->input->length);
+                if ($symbol != AMquote)
+                    $str = $this->AMremoveCharsAndBlanks($str, strlen($symbol['input']));
                 if (str->charAt(0) == "{") $i = str->indexOf("}");
                 else if (str->charAt(0) == "(") $i = str->indexOf(")");
                 else if (str->charAt(0) == "[") $i = str->indexOf("]");
-                else if (symbol == AMquote) $i = str->slice(1)->indexOf("\"") + 1;
+                else if ($symbol == AMquote) $i = str->slice(1)->indexOf("\"") + 1;
                 else $i = 0;
-                if ($i == -1) $i = str->length;
-                st = str->slice(1, $i);
-                if (st->charAt(0) == " ") {
-                    node = $this->createMmlNode("mspace");
-                    node->setAttribute("width", "1ex");
-                    newFrag->appendChild(node);
+                if ($i == -1) $i = strlen($str);
+                $st = subst($str,1, $i);
+                   if (symbol.input === 'mspace') { // special case
+        var m = st.match(/^(-?[\d\.]+)\s*(em|mu)?$/);
+        if (!m) {
+          st = "0em";
+        } else if (!m[2] || m[2] == "mu") {
+          st = (m[1]/16) + "em";
+        }
+        node = createMmlNode(symbol.tag);
+        node.setAttribute("width", st);
+        str = AMremoveCharsAndBlanks(str,i+1);
+        return [node, str];
+      }
+
+                if ($st->charAt(0) == " ") {
+                    $node = $this->createMmlNode("mspace");
+                    $node->setAttribute("width", "1ex");
+                    newFrag->appendChild($node);
                 }
                 newFrag->appendChild(
-                    $this->createMmlNode(symbol->tag, $this->createTextNode(st)));
-                if (st->charAt(st->length - 1) == " ") {
-                    node = $this->createMmlNode("mspace");
-                    node->setAttribute("width", "1ex");
-                    newFrag->appendChild(node);
+                    $this->createMmlNode($symbol['tag'], $this->createTextNode($st)));
+                if ($st->charAt($st->length - 1) == " ") {
+                    $node = $this->createMmlNode("mspace");
+                    $node->setAttribute("width", "1ex");
+                    $newFrag->appendChild($node);
                 }
-                str = $this->AMremoveCharsAndBlanks(str, $i + 1);
+                $str = $this->AMremoveCharsAndBlanks(str, $i + 1);
                 return [$this->createMmlNode("mrow", newFrag), str];
             case $UNARYUNDEROVER:
             case $UNARY:
-                str = $this->AMremoveCharsAndBlanks(str, symbol->input->length);
-                result = $this->AMparseSexpr(str);
+                $str = $this->AMremoveCharsAndBlanks(str, strlen($symbol['input']));
+                $result = $this->AMparseSexpr(str);
 
-                if (result[0] == null) {
-                    if (symbol->tag == "mi" or symbol->tag == "mo") {
-                        return [$this->createMmlNode(symbol->tag,
-                            $this->createTextNode(symbol->output)), str];
+                if ($result[0] == null) {
+                    if ($symbol['tag'] == "mi" or $symbol['tag'] == "mo") {
+                        return [$this->createMmlNode($symbol['tag'],
+                            $this->createTextNode($symbol['output'])), str];
                     } else {
-                        result[0] = $this->createMmlNode("mi");
+                        $result[0] = $this->createMmlNode("mi");
                     }
                 }
-                if (typeof symbol->func == "boolean" and symbol->func) { // functions hack
-                    st = str->charAt(0);
-                    if (st == "^" or st == "_" or st == "/" or st == "|" or st == $this->listseparator or
-                        (symbol->input->length == 1 and symbol->input->match(/\w/) and st != "(")) {
-                        return [$this->createMmlNode(symbol->tag,
-                            $this->createTextNode(symbol->output)), str];
+                if ( $symbol->func) { // functions hack
+                    $st = $str->charAt(0);
+                    if ($st == "^" or $st == "_" or $st == "/" or $st == "|" or $st == $this->listseparator or
+                        (strlen($symbol['input']) == 1 and $symbol['input']->match(/\w/) and $st != "(")) {
+                        return [$this->createMmlNode($symbol['tag'],
+                            $this->createTextNode($symbol['output'])), $str];
                     } else {
-                        node = $this->createMmlNode("mrow",
-                            $this->createMmlNode(symbol->tag, $this->createTextNode(symbol->output)));
-                        node->appendChild(result[0]);
-                        return [node, result[1]];
+                        $node = $this->createMmlNode("mrow",
+                            $this->createMmlNode($symbol['tag'], $this->createTextNode($symbol['output'])));
+                        $node->appendChild($result[0]);
+                        return [$node, $result[1]];
                     }
                 }
-                $this->AMremoveBrackets(result[0]);
-                if (symbol->input == "sqrt") {           // sqrt
-                    return [$this->createMmlNode(symbol->tag, result[0]), result[1]];
-                } else if (typeof symbol->rewriteleftright != "undefined") {    // abs, floor, ceil
-                    node = $this->createMmlNode("mrow", $this->createMmlNode("mo", $this->createTextNode(symbol->rewriteleftright[0])));
-                    node->appendChild(result[0]);
-                    node->appendChild($this->createMmlNode("mo", $this->createTextNode(symbol->rewriteleftright[1])));
-                    return [node, result[1]];
-                } else if (symbol->input == "cancel") {   // cancel
-                    node = $this->createMmlNode(symbol->tag, result[0]);
-                    node->setAttribute("notation", "updiagonalstrike");
-                    return [node, result[1]];
-                } else if (typeof symbol->acc == "boolean" and symbol->acc) {   // accent
-                    node = $this->createMmlNode(symbol->tag, result[0]);
-                    if (symbol->tag == 'mover' and symbol->ttype == $UNARY) {
-                        node->setAttribute("accent", "true");
-                    } else if (symbol->tag == 'munder' and symbol->ttype == $UNARY) {
-                        node->setAttribute("accentunder", "true");
+                $this->AMremoveBrackets($result[0]);
+                if ($symbol['input'] == "sqrt") {           // sqrt
+                    return [$this->createMmlNode($symbol['tag'], $result[0]), $result[1]];
+                } else if (typeof $symbol->rewriteleftright != "undefined") {    // abs, floor, ceil
+                    $node = $this->createMmlNode("mrow", $this->createMmlNode("mo", $this->createTextNode($symbol->rewriteleftright[0])));
+                    $node->appendChild($result[0]);
+                    $node->appendChild($this->createMmlNode("mo", $this->createTextNode($symbol->rewriteleftright[1])));
+                    return [$node, $result[1]];
+                } else if ($symbol['input'] == "cancel") {   // cancel
+                    $node = $this->createMmlNode($symbol['tag'], $result[0]);
+                    $node->setAttribute("notation", "updiagonalstrike");
+                    return [$node, $result[1]];
+                } else if (typeof $symbol['acc'] == "boolean" and $symbol['acc']) {   // accent
+                    $node = $this->createMmlNode($symbol['tag'], $result[0]);
+                    if ($symbol['tag'] == 'mover' and $symbol['ttype'] == $UNARY) {
+                        $node->setAttribute("accent", "true");
+                    } else if ($symbol['tag'] == 'munder' and $symbol['ttype'] == $UNARY) {
+                        $node->setAttribute("accentunder", "true");
                     }
-                    $accnode = $this->createMmlNode("mo", $this->createTextNode(symbol->output));
-                    if (symbol->input == "vec" and (
-                        (result[0]->nodeName == "mrow" and result[0]->childNodes->length == 1
-                            and result[0]->firstChild()->firstChild()->nodeValue !== null
-                            and result[0]->firstChild()->firstChild()->nodeValue->length == 1) or
-                        (result[0]->firstChild() and result[0]->firstChild()->nodeValue !== null
-                            and result[0]->firstChild()->nodeValue->length == 1))
+                    $accnode = $this->createMmlNode("mo", $this->createTextNode($symbol['output']));
+                    if ($symbol['input'] == "vec" and (
+                        ($result[0]->nodeName == "mrow" and $result[0]->childNodes->length == 1
+                            and $result[0]->firstChild()->firstChild()->nodeValue !== null
+                            and $result[0]->firstChild()->firstChild()->nodeValue->length == 1) or
+                        ($result[0]->firstChild() and $result[0]->firstChild()->nodeValue !== null
+                            and $result[0]->firstChild()->nodeValue->length == 1))
                     ) {
                         // special case of single character base for vector accent,
                         // where stretchy can make it look bad
-                        accnode->setAttribute("stretchy", false);
+                        $accnode->setAttribute("stretchy", false);
                     } else {
-                        accnode->setAttribute("stretchy", true);
+                        $accnode->setAttribute("stretchy", true);
                     }
-                    node->appendChild(accnode);
-                    return [node, result[1]];
-                } else if (symbol->input == "bold") {
-                    result[0]->style['fontWeight'] = "bold";
-                    return [result[0], result[1]];
-                } else if (symbol->input == "italic") {
-                    result[0]->style['fontStyle'] = "italic";
-                    return [result[0], result[1]];
+                    $node->appendChild($accnode);
+                    return [$node, $result[1]];
+                } else if ($symbol['input'] == "bold") {
+                    $result[0]->style['fontWeight'] = "bold";
+                    return [$result[0], $result[1]];
+                } else if ($symbol['input'] == "italic") {
+                    $result[0]->style['fontStyle'] = "italic";
+                    return [$result[0], $result[1]];
                 } else {                        // font change command
-                    if (typeof symbol->codes === 'string') {
-                        $this->AMmapChars(result[0], symbol->codes, symbol->input);
+                    if (typeof $symbol['codes'] === 'string') {
+                        $this->AMmapChars($result[0], $symbol['codes'], $symbol['input']);
                     }
-                    return [result[0], result[1]];
+                    return [$result[0], $result[1]];
                 }
             case $BINARY:
-                str = $this->AMremoveCharsAndBlanks(str, symbol->input->length);
-                result = $this->AMparseSexpr(str);
-                if (result[0] == null) return [$this->createMmlNode("mo",
-                    $this->createTextNode(symbol->input)), str];
-                $this->AMremoveBrackets(result[0]);
-                $result2 = $this->AMparseSexpr(result[1]);
+                str = $this->AMremoveCharsAndBlanks(str, strlen($symbol['input']));
+                $result = $this->AMparseSexpr(str);
+                if ($result[0] == null) return [$this->createMmlNode("mo",
+                    $this->createTextNode($symbol['input'])), str];
+                $this->AMremoveBrackets($result[0]);
+                $result2 = $this->AMparseSexpr($result[1]);
                 if (result2[0] == null) return [$this->createMmlNode("mo",
-                    $this->createTextNode(symbol->input)), str];
+                    $this->createTextNode($symbol['input'])), str];
                 $this->AMremoveBrackets(result2[0]);
-                if (['color', 'class', 'id']->indexOf(symbol->input) >= 0) {
+                if (['color', 'class', 'id']->indexOf($symbol['input']) >= 0) {
 
                     // Get the second argument
                     if (str->charAt(0) == "{") $i = str->indexOf("}");
@@ -989,63 +1013,63 @@ class AMserver {
                     else if (str->charAt(0) == "[") $i = str->indexOf("]");
                     st = str->slice(1, $i);
 
-                    // Make a mathml node
-                    node = $this->createMmlNode(symbol->tag, result2[0]);
+                    // Make a mathml $node
+                    $node = $this->createMmlNode($symbol['tag'], result2[0]);
 
                     // Set the correct attribute
-                    if (symbol->input === "color") node->setAttribute("mathcolor", st)
-                    else if (symbol->input === "class") node->setAttribute("class", st)
-                    else if (symbol->input === "id") node->setAttribute("id", st)
-                    return [node, result2[1]];
+                    if ($symbol['input'] === "color") $node->setAttribute("mathcolor", st)
+                    else if ($symbol['input'] === "class") $node->setAttribute("class", st)
+                    else if ($symbol['input'] === "id") $node->setAttribute("id", st)
+                    return [$node, result2[1]];
                 }
-                if (symbol->input == "root" or symbol->output == "stackrel")
+                if ($symbol['input'] == "root" or $symbol['output'] == "stackrel")
                     newFrag->appendChild(result2[0]);
-                newFrag->appendChild(result[0]);
-                if (symbol->input == "frac") newFrag->appendChild(result2[0]);
-                return [$this->createMmlNode(symbol->tag, newFrag), result2[1]];
+                newFrag->appendChild($result[0]);
+                if ($symbol['input'] == "frac") newFrag->appendChild(result2[0]);
+                return [$this->createMmlNode($symbol['tag'], newFrag), result2[1]];
             case $INFIX:
-                str = $this->AMremoveCharsAndBlanks(str, symbol->input->length);
-                return [$this->createMmlNode("mo", $this->createTextNode(symbol->output)), str];
+                str = $this->AMremoveCharsAndBlanks(str, strlen($symbol['input']));
+                return [$this->createMmlNode("mo", $this->createTextNode($symbol['output'])), str];
             case $SPACE:
-                str = $this->AMremoveCharsAndBlanks(str, symbol->input->length);
-                node = $this->createMmlNode("mspace");
-                node->setAttribute("width", "1ex");
-                newFrag->appendChild(node);
+                str = $this->AMremoveCharsAndBlanks(str, strlen($symbol['input']));
+                $node = $this->createMmlNode("mspace");
+                $node->setAttribute("width", "1ex");
+                newFrag->appendChild($node);
                 newFrag->appendChild(
-                    $this->createMmlNode(symbol->tag, $this->createTextNode(symbol->output)));
-                node = $this->createMmlNode("mspace");
-                node->setAttribute("width", "1ex");
-                newFrag->appendChild(node);
+                    $this->createMmlNode($symbol['tag'], $this->createTextNode($symbol['output'])));
+                $node = $this->createMmlNode("mspace");
+                $node->setAttribute("width", "1ex");
+                newFrag->appendChild($node);
                 return [$this->createMmlNode("mrow", newFrag), str];
             case $LEFTRIGHT:
                 //    if (rightvert) return [null,str]; else rightvert = true;
                 $this->AMnestingDepth++;
-                str = $this->AMremoveCharsAndBlanks(str, symbol->input->length);
-                result = $this->AMparseExpr(str, false);
+                str = $this->AMremoveCharsAndBlanks(str, strlen($symbol['input']));
+                $result = $this->AMparseExpr(str, false);
                 $this->AMnestingDepth--;
                 st = "";
-                if (result[0]->lastChild() != null)
-                    st = result[0]->lastChild()->firstChild()->nodeValue;
+                if ($result[0]->lastChild() != null)
+                    st = $result[0]->lastChild()->firstChild()->nodeValue;
                 if (st == "|" and str->charAt(0) !== $this->listseparator) { // its an absolute value subterm
-                    node = $this->createMmlNode("mo", $this->createTextNode(symbol->output));
-                    node = $this->createMmlNode("mrow", node);
-                    node->appendChild(result[0]);
-                    return [node, result[1]];
+                    $node = $this->createMmlNode("mo", $this->createTextNode($symbol['output']));
+                    $node = $this->createMmlNode("mrow", $node);
+                    $node->appendChild($result[0]);
+                    return [$node, $result[1]];
                 } else { // the "|" is a \mid so use unicode 2223 (divides) for spacing
-                    node = $this->createMmlNode("mo", $this->createTextNode("\u2223"));
-                    node = $this->createMmlNode("mrow", node);
-                    return [node, str];
+                    $node = $this->createMmlNode("mo", $this->createTextNode("\u2223"));
+                    $node = $this->createMmlNode("mrow", $node);
+                    return [$node, str];
                 }
             default:
                 //alert("default");
-                str = $this->AMremoveCharsAndBlanks(str, symbol->input->length);
-                return [$this->createMmlNode(symbol->tag,        //its a constant
-                    $this->createTextNode(symbol->output)), str];
+                str = $this->AMremoveCharsAndBlanks(str, strlen($symbol['input']));
+                return [$this->createMmlNode($symbol['tag'],        //its a constant
+                    $this->createTextNode($symbol['output'])), str];
         }
     }
 
     // walks a node, and maps characters according to codemap
-    function AMmapChars(node: AMNode, variant: string, inputsym: string) {
+    function AMmapChars($node: AMNode, variant: string, inputsym: string) {
         $tag = '';
         $codemap = codemaps[variant];
         if (!codemap[2] and inputsym->substring(0, 2) == 'bb') {
@@ -1053,14 +1077,14 @@ class AMserver {
             codemap[2] = codemaps['bold'][2];
         }
         $remap = codemap[5] or {};
-        if (node->tagName) {
-            tag = node->tagName->toUpperCase();
+        if ($node['tag']Name) {
+            tag = $node['tag']Name->toUpperCase();
         }
         if (tag == "MI" or tag == "MO" or tag == "MN" or tag == "MTEXT") {
             if ($this->addmathvariant) {
-                node->setAttribute("mathvariant", variant);
+                $node->setAttribute("mathvariant", variant);
             }
-            $st = node->firstChild()->nodeValue->toString();
+            $st = $node->firstChild()->nodeValue->toString();
             $newst = "";
             $didmap, charcode;
             $map: any // { [key: string]: any[] };
@@ -1084,95 +1108,94 @@ class AMserver {
                     newst .= st->charAt(j);
                 }
             }
-            node->replaceChild($this->createTextNode(newst), node->firstChild());
+            $node->replaceChild($this->createTextNode(newst), $node->firstChild());
         } else {
-            for ($i = 0; $i < node->childNodes->length; $i++) {
-                $this->AMmapChars(node->childNodes[$i], variant, inputsym);
+            for ($i = 0; $i < $node->childNodes->length; $i++) {
+                $this->AMmapChars($node->childNodes[$i], variant, inputsym);
             }
         }
     }
 
-    function AMparseIexpr(str: string): [AMNode, string] {
-        $symbol, sym1, sym2, node, result, underover;
-        str = $this->AMremoveCharsAndBlanks(str, 0);
-        sym1 = $this->AMgetSymbol(str);
-        result = $this->AMparseSexpr(str);
-        node = result[0];
-        str = result[1];
-        symbol = $this->AMgetSymbol(str);
-        if (symbol->ttype == $INFIX and symbol->input != "/") {
-            str = $this->AMremoveCharsAndBlanks(str, symbol->input->length);
-            //    if (symbol->input == "/") result = AMparseIexpr(str); else ->->->
-            result = $this->AMparseSexpr(str);
-            if (result[0] == null) // show box in place of missing argument
-                result[0] = $this->createMmlNode("mo", $this->createTextNode("\u25A1"));
-            else $this->AMremoveBrackets(result[0]);
-            str = result[1];
-            //    if (symbol->input == "/") AMremoveBrackets(node);
-            underover = (sym1->ttype == $UNDEROVER or sym1->ttype == $UNARYUNDEROVER);
-            if (symbol->input == "_") {
-                sym2 = $this->AMgetSymbol(str);
-                if (sym2->input == "^") {
-                    str = $this->AMremoveCharsAndBlanks(str, sym2->input->length);
-                    $res2 = $this->AMparseSexpr(str);
+    function AMparseIexpr(string $str) /*: [AMNode, string]*/ {
+        $str = $this->AMremoveCharsAndBlanks($str, 0);
+        $sym1 = $this->AMgetSymbol($str);
+        $result = $this->AMparseSexpr($str);
+        $node = $result[0];
+        $str = $result[1];
+        $symbol = $this->AMgetSymbol($str);
+        if ($symbol['ttype'] == $INFIX and $symbol['input'] != "/") {
+            $str = $this->AMremoveCharsAndBlanks($str, strlen($symbol['input']));
+            //    if ($symbol['input'] == "/") $result = AMparseIexpr($str); else ->->->
+            $result = $this->AMparseSexpr($str);
+            if ($result[0] == null) // show box in place of missing argument
+                $result[0] = $this->createMmlNode("mo", $this->createTextNode("\u25A1"));
+            else $this->AMremoveBrackets($result[0]);
+            $str = $result[1];
+            //    if ($symbol['input'] == "/") AMremoveBrackets($node);
+            $underover = ($sym1['ttype'] == $UNDEROVER or $sym1['ttype'] == $UNARYUNDEROVER);
+            if ($symbol['input'] == "_") {
+                $sym2 = $this->AMgetSymbol($str);
+                if ($sym2['input'] == "^") {
+                    $str = $this->AMremoveCharsAndBlanks($str, $sym2['input']->length);
+                    $res2 = $this->AMparseSexpr($str);
                     $this->AMremoveBrackets(res2[0]);
-                    str = res2[1];
-                    node = $this->createMmlNode((underover ? "munderover" : "msubsup"), node);
-                    node->appendChild(result[0]);
-                    node->appendChild(res2[0]);
-                    node = $this->createMmlNode("mrow", node); // so sum does not stretch
+                    $str = res2[1];
+                    $node = $this->createMmlNode(($underover ? "munderover" : "msubsup"), $node);
+                    $node->appendChild($result[0]);
+                    $node->appendChild(res2[0]);
+                    $node = $this->createMmlNode("mrow", $node); // so sum does not stretch
                 } else {
-                    node = $this->createMmlNode((underover ? "munder" : "msub"), node);
-                    node->appendChild(result[0]);
+                    $node = $this->createMmlNode(($underover ? "munder" : "msub"), $node);
+                    $node->appendChild($result[0]);
                 }
-            } else if (symbol->input == "^" and underover) {
-                node = $this->createMmlNode("mover", node);
-                node->appendChild(result[0]);
+            } else if ($symbol['input'] == "^" and $underover) {
+                $node = $this->createMmlNode("mover", $node);
+                $node->appendChild($result[0]);
             } else {
-                node = $this->createMmlNode(symbol->tag, node);
-                node->appendChild(result[0]);
+                $node = $this->createMmlNode($symbol['tag'], $node);
+                $node->appendChild($result[0]);
             }
-            if (typeof sym1->func != 'undefined' and sym1->func) {
-                sym2 = $this->AMgetSymbol(str);
-                if (sym2->ttype != $INFIX and sym2->ttype != $RIGHTBRACKET and
-                    (sym1->input->length > 1 or sym2->ttype == $LEFTBRACKET)) {
-                    result = $this->AMparseIexpr(str);
-                    node = $this->createMmlNode("mrow", node);
-                    node->appendChild(result[0]);
-                    str = result[1];
+            if ($sym1->func) {
+                $sym2 = $this->AMgetSymbol($str);
+                if ($sym2['ttype'] != $INFIX and $sym2['ttype'] != $RIGHTBRACKET and
+                    ($sym1['input']->length > 1 or $sym2['ttype'] == $LEFTBRACKET)) {
+                    $result = $this->AMparseIexpr($str);
+                    $node = $this->createMmlNode("mrow", $node);
+                    $node->appendChild($result[0]);
+                    $str = $result[1];
                 }
             }
         }
-        return [node, str];
+        return [$node, $str];
     }
 
-    function AMparseExpr(str: string, rightbracket = false): [AMNode, string] {
-        $symbol: AMSymbol, node: AMNode, result, $i
+    function AMparseExpr($str: string, rightbracket = false): [AMNode, string] {
+        $symbol: AMSymbol, $node: AMNode, result, $i
         $newFrag = $this->createDocumentFragment();
         do {
-            str = $this->AMremoveCharsAndBlanks(str, 0);
-            result = $this->AMparseIexpr(str);
-            node = result[0];
-            str = result[1];
-            symbol = $this->AMgetSymbol(str);
-            if (symbol->ttype == $INFIX and symbol->input == "/") {
-                str = $this->AMremoveCharsAndBlanks(str, symbol->input->length);
-                result = $this->AMparseIexpr(str);
+            $str = $this->AMremoveCharsAndBlanks($str, 0);
+            result = $this->AMparseIexpr($str);
+            $node = result[0];
+            $str = result[1];
+            symbol = $this->AMgetSymbol($str);
+            if (symbol['ttype'] == $INFIX and symbol['input'] == "/") {
+                $str = $this->AMremoveCharsAndBlanks($str, symbol['input']->length);
+                result = $this->AMparseIexpr($str);
                 if (result[0] == null) // show box in place of missing argument
                     result[0] = $this->createMmlNode("mo", $this->createTextNode("\u25A1"));
                 else $this->AMremoveBrackets(result[0]);
-                str = result[1];
-                $this->AMremoveBrackets(node);
-                node = $this->createMmlNode(symbol->tag, node);
-                node->appendChild(result[0]);
-                newFrag->appendChild(node);
-                symbol = $this->AMgetSymbol(str);
+                $str = result[1];
+                $this->AMremoveBrackets($node);
+                $node = $this->createMmlNode(symbol['tag'], $node);
+                $node->appendChild(result[0]);
+                newFrag->appendChild($node);
+                symbol = $this->AMgetSymbol($str);
             }
-            else if (node != undefined) newFrag->appendChild(node);
-        } while ((symbol->ttype != $RIGHTBRACKET and
-            (symbol->ttype != $LEFTRIGHT or rightbracket)
-            or $this->AMnestingDepth == 0) and symbol != null and symbol->output != "");
-        if (symbol->ttype == $RIGHTBRACKET or symbol->ttype == $LEFTRIGHT) {
+            else if ($node != undefined) newFrag->appendChild($node);
+        } while ((symbol['ttype'] != $RIGHTBRACKET and
+            (symbol['ttype'] != $LEFTRIGHT or rightbracket)
+            or $this->AMnestingDepth == 0) and symbol != null and symbol['output'] != "");
+        if (symbol['ttype'] == $RIGHTBRACKET or symbol['ttype'] == $LEFTRIGHT) {
             //    if ($this->AMnestingDepth > 0) $this->AMnestingDepth--;
             $len = newFrag->childNodes->length;
             if (len > 0 and newFrag->childNodes[len - 1]->nodeName == "mrow"
@@ -1184,25 +1207,25 @@ class AMserver {
                 $right = newFrag->childNodes[len - 1]->lastChild()->firstChild()->nodeValue;
                 if (right == ")" or right == "]") {
                     $left = newFrag->childNodes[len - 1]->firstChild()->firstChild()->nodeValue;
-                    if (left == "(" and right == ")" and symbol->output != "}" or
+                    if (left == "(" and right == ")" and symbol['output'] != "}" or
                         left == "[" and right == "]") {
-                        $pos: number[][] = []; // positions of commas
+                        $pos = []; // positions of commas
                         $matrix = true;
-                        $m = newFrag->childNodes->length;
+                        $m = count(newFrag->childNodes);
                         for ($i = 0; matrix and $i < m; $i = $i + 2) {
                             pos[$i] = [];
-                            node = newFrag->childNodes[$i];
-                            if (matrix) matrix = node->nodeName == "mrow" and
-                                ($i == m - 1 or node->nextSibling()!->nodeName == "mo" and
-                                    node->nextSibling()!->firstChild()->nodeValue == $this->listseparator) and
-                                node->firstChild()->firstChild() !== null and
-                                node->firstChild()->firstChild()->nodeValue == left and
-                                node->lastChild()->firstChild() !== null and
-                                node->lastChild()->firstChild()->nodeValue == right;
+                            $node = newFrag->childNodes[$i];
+                            if (matrix) matrix = $node->nodeName == "mrow" and
+                                ($i == m - 1 or $node->nextSibling()->nodeName == "mo" and
+                                    $node->nextSibling()->firstChild()->nodeValue == $this->listseparator) and
+                                $node->firstChild()->firstChild() !== null and
+                                $node->firstChild()->firstChild()->nodeValue == left and
+                                $node->lastChild()->firstChild() !== null and
+                                $node->lastChild()->firstChild()->nodeValue == right;
                             if (matrix)
-                                for ($j = 0; j < node->childNodes->length; j++)
-                                    if (node->childNodes[j]->firstChild()->nodeValue == $this->listseparator)
-                                        pos[$i][pos[$i]->length] = j;
+                                for ($j = 0; $j < $node->childNodes->length; $j++)
+                                    if ($node->childNodes[j]->firstChild()->nodeValue == $this->listseparator)
+                                        pos[$i][pos[$i]->length] = $j;
                             if (matrix and $i > 1) matrix = pos[$i]->length == pos[$i - 2]->length;
                         }
                         matrix = matrix and (pos->length > 1 or pos[0]->length > 0);
@@ -1212,25 +1235,25 @@ class AMserver {
                             for ($i = 0; $i < m; $i = $i + 2) {
                                 row = $this->createDocumentFragment();
                                 $frag = $this->createDocumentFragment();
-                                node = newFrag->firstChild(); // <mrow>(-,-,->->->,-,-)</mrow>
-                                n = node->childNodes->length;
+                                $node = newFrag->firstChild(); // <mrow>(-,-,->->->,-,-)</mrow>
+                                n = $node->childNodes->length;
                                 k = 0;
-                                node->removeChild(node->firstChild()); //remove (
+                                $node->removeChild($node->firstChild()); //remove (
                                 for ($j = 1; j < n - 1; j++) {
                                     if (typeof pos[$i][k] != "undefined" and j == pos[$i][k]) {
-                                        node->removeChild(node->firstChild()); //remove ,
-                                        if (node->firstChild()->nodeName == "mrow" and node->firstChild()->childNodes->length == 1 and
-                                            node->firstChild()->firstChild()->firstChild()->nodeValue == "\u2223") {
+                                        $node->removeChild($node->firstChild()); //remove ,
+                                        if ($node->firstChild()->nodeName == "mrow" and $node->firstChild()->childNodes->length == 1 and
+                                            $node->firstChild()->firstChild()->firstChild()->nodeValue == "\u2223") {
                                             //is columnline marker - skip it
                                             if ($i == 0) { columnlines->push("solid"); }
-                                            node->removeChild(node->firstChild()); //remove mrow
-                                            node->removeChild(node->firstChild()); //remove ,
+                                            $node->removeChild($node->firstChild()); //remove mrow
+                                            $node->removeChild($node->firstChild()); //remove ,
                                             j .= 2;
                                             k++;
                                         } else if ($i == 0) { columnlines->push("none"); }
                                         row->appendChild($this->createMmlNode("mtd", $frag));
                                         k++;
-                                    } else $frag->appendChild(node->firstChild());
+                                    } else $frag->appendChild($node->firstChild());
                                 }
                                 row->appendChild($this->createMmlNode("mtd", $frag));
                                 if ($i == 0) { columnlines->push("none"); }
@@ -1240,49 +1263,49 @@ class AMserver {
                                 }
                                 table->appendChild($this->createMmlNode("mtr", row));
                             }
-                            node = $this->createMmlNode("mtable", table);
-                            node->setAttribute("columnlines", columnlines->join(" "));
-                            if (typeof symbol->invisible == "boolean" and symbol->invisible) node->setAttribute("columnalign", "left");
-                            newFrag->replaceChild(node, newFrag->firstChild());
+                            $node = $this->createMmlNode("mtable", table);
+                            $node->setAttribute("columnlines", columnlines->join(" "));
+                            if (symbol->invisible) $node->setAttribute("columnalign", "left");
+                            newFrag->replaceChild($node, newFrag->firstChild());
                         }
                     }
                 }
             }
-            str = $this->AMremoveCharsAndBlanks(str, symbol->input->length);
-            if (typeof symbol->invisible != "boolean" or !symbol->invisible) {
-                node = $this->createMmlNode("mo", $this->createTextNode(symbol->output));
-                newFrag->appendChild(node);
+            $str = $this->AMremoveCharsAndBlanks($str, strlen(symbol['input']));
+            if ( !$symbol->invisible) {
+                $node = $this->createMmlNode("mo", $this->createTextNode(symbol['output']));
+                $newFrag->appendChild($node);
             }
         }
-        return [newFrag, str];
+        return [newFrag, $str];
     }
 
-    function parseMath(str: string): string {
+    function parseMath(string $str): string {
         $this->AMnestingDepth = 0;
         //some basic cleanup for dealing with stuff editors like TinyMCE adds
-        str = str->replace(/&nbsp;/g, "");
-        str = str->replace(/&gt;/g, ">");
-        str = str->replace(/&lt;/g, "<");
-        $frag = $this->AMparseExpr(str->replace(/^\s+/g, ""), false)[0];
+        // $str = str_replace( '&nbsp;', "",$str);
+        // $str = str_replace('&gt;', ">", $str);
+        // $str = str_replace('&lt;', "<",$str);
+        $frag = $this->AMparseExpr(str_replace('^',"",$str));
         $node = $this->createMmlNode("mstyle", $frag);
-        if ($this->mathcolor != "") node->setAttribute("mathcolor", $this->mathcolor);
+        if ($this->mathcolor != "") $node->setAttribute("mathcolor", $this->mathcolor);
         if ($this->mathfontsize != "") {
-            node->setAttribute("fontsize", $this->mathfontsize);
-            node->setAttribute("mathsize", $this->mathfontsize);
+            $node->setAttribute("fontsize", $this->mathfontsize);
+            $node->setAttribute("mathsize", $this->mathfontsize);
         }
         if ($this->mathfontfamily != "") {
-            node->setAttribute("fontfamily", $this->mathfontfamily);
-            node->setAttribute("mathvariant", $this->mathfontfamily);
+            $node->setAttribute("fontfamily", $this->mathfontfamily);
+            $node->setAttribute("mathvariant", $this->mathfontfamily);
         }
 
         if ($this->displaystyle)
-            node->setAttribute("displaystyle", "true");
-        node = $this->createMmlNode("math", node);
+            $node->setAttribute("displaystyle", "true");
+        $node = $this->createMmlNode("math", $node);
         if ($this->showasciiformulaonhover) {                     //fixed by djhsu so newline
-            node = $this->createMmlNode('div', node)
-            node->setAttribute("title", str->replace(/\s+/g, " "));//does not show in Gecko
+            $node = $this->createMmlNode('div', $node);
+            $node->setAttribute("title", $str->replace(/\s+/g, " "));//does not show in Gecko
         }
-        return node->flatten();
+        return $node->flatten();
     }
 }
 
