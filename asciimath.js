@@ -56,7 +56,7 @@ export class AMNode {
         this.childNodes = []; // maintain them together, with the SAME nodes
         this.children = [];
         this.attributes = {};
-        this.style = { fontWeight: '', fontStyle: '' };
+        this.style = ''; //{ [key: string]: any } = { fontWeight: '', fontStyle: '' }
         this.nodeName = t;
         this.nodeValue = content;
         this.unique = Symbol();
@@ -151,10 +151,8 @@ export class AMNode {
     /** turn a tree of AMNodes into an HTML string */
     flatten() {
         let html = '';
+        let style = (this.style.length > 0) ? ` style = \'${this.style}\'` : '';
         if (this.nodeName !== '#text' && this.nodeName !== '') {
-            let style = '';
-            if (this.style.fontWeight !== '' || this.style.fontStyle !== '')
-                style = ` style = "${(this.style.fontWeight !== '') ? 'font-weight:' + this.style.fontWeight + ';' : ''} ${(this.style.fontStyle !== '') ? 'font-style:' + this.style.fontStyle + ';' : ''}"`;
             let attributes = '';
             for (let [key, value] of Object.entries(this.attributes))
                 attributes += ` ${key}= "${value}"`;
@@ -168,7 +166,8 @@ export class AMNode {
                 html += this.children[i].flatten();
             }
         }
-        html += `</${this.nodeName}>`;
+        html += `</${this.nodeName}${style}>`;
+        console.log(html);
         return html;
     }
 }
@@ -373,10 +372,11 @@ let AMsymbols = [
     { input: "tilde", tag: "mover", output: "~", tex: null, ttype: UNARY, acc: true },
     { input: "\\ ", tag: "mo", output: "\u00A0", tex: null, ttype: CONST },
     { input: "frown", tag: "mo", output: "\u2322", tex: null, ttype: CONST },
-    { input: "quad", tag: "mo", output: "\u00A0\u00A0", tex: null, ttype: CONST },
-    { input: "qquad", tag: "mo", output: "\u00A0\u00A0\u00A0\u00A0", tex: null, ttype: CONST },
+    { input: "quad", tag: "mspace", output: "1", tex: null, ttype: CONST },
+    { input: "qquad", tag: "mspace", output: "2", tex: null, ttype: CONST },
+    { input: "enspace", tag: "mspace", output: "0.5", tex: null, ttype: CONST },
     { input: "thinspace", tag: "mspace", output: "0.17", tex: null, ttype: CONST },
-    { input: "mspace", tag: "mspace", output: "mspace", tex: null, ttype: TEXT }, { input: "cdots", tag: "mo", output: "\u22EF", tex: null, ttype: CONST },
+    { input: "mspace", tag: "mspace", output: "mspace", tex: null, ttype: TEXT },
     { input: "vdots", tag: "mo", output: "\u22EE", tex: null, ttype: CONST },
     { input: "ddots", tag: "mo", output: "\u22F1", tex: null, ttype: CONST },
     { input: "diamond", tag: "mo", output: "\u22C4", tex: null, ttype: CONST },
@@ -485,7 +485,7 @@ let AMsymbols = [
     { input: "color", tag: "mstyle", output: "", ttype: BINARY },
     { input: "id", tag: "mrow", output: "", ttype: BINARY },
     { input: "class", tag: "mrow", output: "", ttype: BINARY },
-    { input: "cancel", tag: "menclose", output: "cancel", tex: null, ttype: UNARY },
+    { input: "cancel", tag: "mrow", output: "cancel", tex: null, ttype: UNARY },
     AMquote,
     { input: "bb", tag: "", ttype: UNARY, tex: "mathbf", output: "", codes: 'bold' },
     { input: "sf", tag: "", ttype: UNARY, tex: "mathsf", output: "", codes: 'sans-serif' },
@@ -499,8 +499,8 @@ let AMsymbols = [
     { input: "bbfr", tag: "", ttype: UNARY, output: "", codes: 'bold-fraktur' },
     { input: "bbit", tag: "", ttype: UNARY, output: "", codes: 'bold-italic' },
     { input: "bbsfit", tag: "", ttype: UNARY, output: "", codes: 'sans-serif-bold-italic' },
-    { input: "bold", tag: "", ttype: UNARY, output: "" },
-    { input: "italic", tag: "", ttype: UNARY, tex: "mathit", output: "", codes: 'italic' }
+    { input: "bold", tag: "mrow", ttype: UNARY, output: "" },
+    { input: "italic", tag: "mrow", ttype: UNARY, tex: "mathit", output: "", codes: 'italic' }
 ];
 /*Parsing ASCII math expressions with the following grammar
 v ::= [A-Za-z] | greek letters | numbers | other constant symbols
@@ -528,7 +528,19 @@ export class AMserver {
         this.listseparator = ","; // when decimalsign="," you can opt to use ";" as listseparator
         this.decimalsign = "."; // if "," then when writing lists or matrices put
         this.addmathvariant = false; // true to add mathvariant on font changes.
+        this.cancelColor = 'red'; // sets default color for cancel
         this.initSymbols();
+    }
+    cancelStyle() {
+        return `
+            padding-left:0.5em;
+            padding-right:0.5em;
+            background:linear-gradient(to top left,
+                    rgba(0, 0, 0, 0) 0,
+                    rgba(0, 0, 0, 0) calc(50% - 1px),
+                    ${this.cancelColor},
+                    rgba(0, 0, 0, 0) calc(50% + 1px))
+            `;
     }
     createMmlNode(t, frag) {
         let node = new AMNode(t);
@@ -708,14 +720,14 @@ export class AMserver {
         }
     }
     AMparseSexpr(str) {
-        let symbol, node, result, i, st, // rightvert = false,
-        newFrag = this.createDocumentFragment();
+        let symbol, node, result, i, st; // rightvert = false,
+        let newFrag = this.createDocumentFragment();
         str = this.AMremoveCharsAndBlanks(str, 0);
         symbol = this.AMgetSymbol(str); //either a token or a bracket or empty
-        //// AMparsSexpr isn't allowed to return null.  not sure wht this can do.
-        // if (symbol == null || symbol.ttype == RIGHTBRACKET && this.AMnestingDepth > 0) {
-        //     return [null, str];
-        // }
+        console.warn('OLD AMparseSexpr', str, symbol);
+        if (symbol == null || symbol.ttype == RIGHTBRACKET && this.AMnestingDepth > 0) {
+            return [newFrag, str];
+        }
         if (symbol.ttype == DEFINITION) {
             str = symbol.output + this.AMremoveCharsAndBlanks(str, symbol.input.length);
             symbol = this.AMgetSymbol(str);
@@ -764,7 +776,6 @@ export class AMserver {
                 st = str.slice(1, i);
                 if (symbol.input === 'mspace') { // special case
                     let m = st.match(/^(-?[\d\.]+)\s*(em|mu)?$/);
-                    console.log(m);
                     if (!m) {
                         st = "0em";
                     }
@@ -793,6 +804,7 @@ export class AMserver {
             case UNARY:
                 str = this.AMremoveCharsAndBlanks(str, symbol.input.length);
                 result = this.AMparseSexpr(str);
+                console.log('unary result', result);
                 if (result[0] == null) {
                     if (symbol.tag == "mi" || symbol.tag == "mo") {
                         return [this.createMmlNode(symbol.tag, this.createTextNode(symbol.output)), str];
@@ -825,7 +837,7 @@ export class AMserver {
                 }
                 else if (symbol.input == "cancel") { // cancel
                     node = this.createMmlNode(symbol.tag, result[0]);
-                    node.setAttribute("notation", "updiagonalstrike");
+                    node.style += this.cancelStyle();
                     return [node, result[1]];
                 }
                 else if (typeof symbol.acc == "boolean" && symbol.acc) { // accent
@@ -853,11 +865,11 @@ export class AMserver {
                     return [node, result[1]];
                 }
                 else if (symbol.input == "bold") {
-                    result[0].style.fontWeight = "bold";
+                    result[0].style += " font-weight:bold;";
                     return [result[0], result[1]];
                 }
                 else if (symbol.input == "italic") {
-                    result[0].style.fontStyle = "italic";
+                    result[0].style += "font-style: italic;";
                     return [result[0], result[1]];
                 }
                 else { // font change command
@@ -1195,8 +1207,9 @@ export class AMserver {
         if (this.displaystyle)
             node.setAttribute("displaystyle", "true");
         node = this.createMmlNode("math", node);
+        node = this.createMmlNode('div', node);
+        // node.style = this.cancelStyle;
         if (this.showasciiformulaonhover) { //fixed by djhsu so newline
-            node = this.createMmlNode('div', node);
             node.setAttribute("title", str.replace(/\s+/g, " ")); //does not show in Gecko
         }
         return node.flatten();

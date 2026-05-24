@@ -7,9 +7,7 @@ export declare class AMNode {
     attributes: {
         [key: string]: any;
     };
-    style: {
-        [key: string]: any;
-    };
+    style: string;
     unique: symbol;
     constructor(t: string, content?: string);
     appendChild(frag: AMNode): AMNode;
@@ -53,7 +51,9 @@ export declare class AMserver {
     listseparator: string;
     decimalsign: string;
     addmathvariant: boolean;
+    cancelColor: string;
     constructor();
+    cancelStyle(): string;
     createMmlNode(t: string, frag?: AMNode): AMNode;
     /** replaces document.createTextNode() */
     createTextNode(content: string): AMNode;

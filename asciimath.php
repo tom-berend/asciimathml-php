@@ -1026,7 +1026,7 @@ class AMserver
                     return [$node, $result[1]];
                 } else if ($symbol['input'] == "cancel") {   // cancel
                     $node = $this->createMmlNode($symbol['tag'], $result[0]);
-                    $node->setAttribute("notation", "updiagonalstrike");
+                    $node->setAttribute("class", "cancel");
                     return [$node, $result[1]];
                 } else if (isset($symbol['acc']) and $symbol['acc']) {   // accent
                     $node = $this->createMmlNode($symbol['tag'], $result[0]);
