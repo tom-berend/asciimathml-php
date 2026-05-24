@@ -487,20 +487,21 @@ let AMsymbols = [
     { input: "class", tag: "mrow", output: "", ttype: BINARY },
     { input: "cancel", tag: "mrow", output: "cancel", tex: null, ttype: UNARY },
     AMquote,
-    { input: "bb", tag: "", ttype: UNARY, tex: "mathbf", output: "", codes: 'bold' },
-    { input: "sf", tag: "", ttype: UNARY, tex: "mathsf", output: "", codes: 'sans-serif' },
-    { input: "sfit", tag: "", ttype: UNARY, output: "", codes: 'sans-serif-italic' },
-    { input: "bbsf", tag: "", ttype: UNARY, output: "", codes: 'bold-sans-serif' },
-    { input: "bbb", tag: "", ttype: UNARY, tex: "mathbb", output: "", codes: 'double-struck' },
-    { input: "cc", tag: "", ttype: UNARY, tex: "mathcal", output: "", codes: 'script' },
-    { input: "bbcc", tag: "", ttype: UNARY, output: "", codes: 'bold-script' },
-    { input: "tt", tag: "", ttype: UNARY, tex: "mathtt", output: "", codes: 'monospace' },
-    { input: "fr", tag: "", ttype: UNARY, tex: "mathfrak", output: "", codes: 'fraktur' },
-    { input: "bbfr", tag: "", ttype: UNARY, output: "", codes: 'bold-fraktur' },
-    { input: "bbit", tag: "", ttype: UNARY, output: "", codes: 'bold-italic' },
-    { input: "bbsfit", tag: "", ttype: UNARY, output: "", codes: 'sans-serif-bold-italic' },
-    { input: "bold", tag: "mrow", ttype: UNARY, output: "" },
-    { input: "italic", tag: "mrow", ttype: UNARY, tex: "mathit", output: "", codes: 'italic' }
+    //TODO figure out why we require a space in 'output for these code commands to work
+    { input: "bb", tag: "", ttype: UNARY, tex: "mathbf", output: " ", codes: 'bold' },
+    { input: "sf", tag: "", ttype: UNARY, tex: "mathsf", output: " ", codes: 'sans-serif' },
+    { input: "sfit", tag: "", ttype: UNARY, output: " ", codes: 'sans-serif-italic' },
+    { input: "bbsf", tag: "", ttype: UNARY, output: " ", codes: 'bold-sans-serif' },
+    { input: "bbb", tag: "", ttype: UNARY, tex: "mathbb", output: " ", codes: 'double-struck' },
+    { input: "cc", tag: "", ttype: UNARY, tex: "mathcal", output: " ", codes: 'script' },
+    { input: "bbcc", tag: "", ttype: UNARY, output: " ", codes: 'bold-script' },
+    { input: "tt", tag: "", ttype: UNARY, tex: "mathtt", output: " ", codes: 'monospace' },
+    { input: "fr", tag: "", ttype: UNARY, tex: "mathfrak", output: " ", codes: 'fraktur' },
+    { input: "bbfr", tag: "", ttype: UNARY, output: " ", codes: 'bold-fraktur' },
+    { input: "bbit", tag: "", ttype: UNARY, output: " ", codes: 'bold-italic' },
+    { input: "bbsfit", tag: "", ttype: UNARY, output: " ", codes: 'sans-serif-bold-italic' },
+    { input: "bold", tag: "mrow", ttype: UNARY, output: " ", codes: 'bold' },
+    { input: "italic", tag: "mrow", ttype: UNARY, tex: "mathit", output: " ", codes: 'italic' }
 ];
 /*Parsing ASCII math expressions with the following grammar
 v ::= [A-Za-z] | greek letters | numbers | other constant symbols
@@ -721,13 +722,13 @@ export class AMserver {
     }
     AMparseSexpr(str) {
         let symbol, node, result, i, st; // rightvert = false,
-        let newFrag = this.createDocumentFragment();
         str = this.AMremoveCharsAndBlanks(str, 0);
         symbol = this.AMgetSymbol(str); //either a token or a bracket or empty
         console.warn('OLD AMparseSexpr', str, symbol);
         if (symbol == null || symbol.ttype == RIGHTBRACKET && this.AMnestingDepth > 0) {
-            return [newFrag, str];
+            return [this.createTextNode(' '), str]; // a bit of a hack, can't return null anymore
         }
+        let newFrag = this.createDocumentFragment();
         if (symbol.ttype == DEFINITION) {
             str = symbol.output + this.AMremoveCharsAndBlanks(str, symbol.input.length);
             symbol = this.AMgetSymbol(str);
@@ -1094,7 +1095,7 @@ export class AMserver {
             //    if (this.AMnestingDepth > 0) this.AMnestingDepth--;
             let len = newFrag.childNodes.length;
             if (len > 0 && newFrag.childNodes[len - 1].nodeName == "mrow"
-                && newFrag.childNodes[len - 1].lastChild
+                && newFrag.childNodes[len - 1].lastChild.hasChildNodes()
                 && newFrag.childNodes[len - 1].lastChild.firstChild) { //matrix
                 //removed to allow row vectors: //&& len>1 &&
                 //newFrag.childNodes[len-2].nodeName == "mo" &&
