@@ -68,7 +68,7 @@ class AMNode
     public array $children = [];
 
     public array $attributes = [];
-    public array $style = ['fontWeight' => '', 'fontStyle' => ''];  // keyed array eg:  'title'->'my title is'
+    public string $style = '';
     public string $unique;
 
 
@@ -103,7 +103,7 @@ class AMNode
                 $this->children[] = $frag;
             }
         }
-        echo '<br>', $this->nodeName, $this->nodeValue, json_encode($this->childNodes);
+        // echo '<br>', $this->nodeName, $this->nodeValue, json_encode($this->childNodes);
         return ($frag);
     }
 
@@ -195,23 +195,11 @@ class AMNode
     function flatten(): string
     {
         $html = '';
-        if ($this->nodeName == '#text') {
-            $html .= "j";
-        }
 
+        $style = (strlen($this->style) > 0) ? " style = '{this.style}'" : "";
         if ($this->nodeName !== '#text' and $this->nodeName !== '') {
-            $html .=  'd';
-            $style = '';
-            if ($this->style['fontWeight'] !== '' or $this->style['fontStyle'] !== '') {
-                $style .= " $style = \"";
-                if ($this->style['fontWeight'] !== '') {
-                    $style .= "font-weight: {$this->style['fontWeight']};";
-                }
-                if ($this->style['fontStyle'] !== '') {
-                    $style .= "font-style: {$this->style['fontStyle']}";
-                }
-                $style .= "\"";
-            }
+
+
 
             $attributes = '';
             foreach ($this->attributes as $key => $value) {
@@ -220,18 +208,18 @@ class AMNode
 
             $html .= "<{$this->nodeName}{$attributes}{$style}>";
         }
-        $html .= 'a';
+        // $html .= 'a';
         if ($this->hasChildNodes() and $this->firstChild()->nodeName == '#text') {
-            $html .= 'f';
+            // $html .= 'f';
             $html .= $this->firstChild()->nodeValue;
-            $html .= 'b';
+            // $html .= 'b';
         } else if ($this->hasChildNodes()) {
-            $html .= 'c';
+            // $html .= 'c';
             for ($i = 0; $i < count($this->children); $i++) {
                 $html .= $this->children[$i]->flatten();
             }
         }
-        $html .= 'e';
+        // $html .= 'e';
         $html .= "</{$this->nodeName}>";
 
         return $html;
@@ -512,6 +500,7 @@ $AMsymbols = [
     ['input' => "frown", 'tag' => "mo", 'output' => "\u2322", 'tex' => null, 'ttype' => $CONST],
     ['input' => "quad", 'tag' => "mo", 'output' => "\u00A0\u00A0", 'tex' => null, 'ttype' => $CONST],
     ['input' => "qquad", 'tag' => "mo", 'output' => "\u00A0\u00A0\u00A0\u00A0", 'tex' => null, 'ttype' => $CONST],
+    ['input' => "enspace", 'tag' => "mspace", 'output' => "0.5", 'tex' => null, 'ttype' => $CONST],
     ['input' => "thinspace", 'tag' => "mspace", 'output' => "0.17", 'tex' => null, 'ttype' => $CONST],
     ['input' => "mspace", 'tag' => "mspace", 'output' => "mspace", 'tex' => null, 'ttype' => $TEXT],
     ['input' => "cdots", 'tag' => "mo", 'output' => "\u22EF", 'tex' => null, 'ttype' => $CONST],
@@ -623,25 +612,26 @@ $AMsymbols = [
     ['input' => "obrace", 'tag' => "mover", 'output' => "\u23DE", 'tex' => "overbrace", 'ttype' => $UNARYUNDEROVER, 'acc' => true],
     ['input' => "text", 'tag' => "mtext", 'output' => "text", 'tex' => null, 'ttype' => $TEXT],
     ['input' => "mbox", 'tag' => "mtext", 'output' => "mbox", 'tex' => null, 'ttype' => $TEXT],
-    ['input' => "color", 'tag' => "mstyle", 'output' => "", 'ttype' => $BINARY],
+    ['input' => "color", 'tag' => "mrow", 'output' => " ", 'ttype' => $BINARY],
     ['input' => "id", 'tag' => "mrow", 'output' => "", 'ttype' => $BINARY],
     ['input' => "class", 'tag' => "mrow", 'output' => "", 'ttype' => $BINARY],
     ['input' => "cancel", 'tag' => "menclose", 'output' => "cancel", 'tex' => null, 'ttype' => $UNARY],
     $AMquote,
-    ['input' => "bb", 'tag' => "", 'ttype' => $UNARY, 'tex' => "mathbf", 'output' => "", 'codes' => 'bold'],
-    ['input' => "sf", 'tag' => "", 'ttype' => $UNARY, 'tex' => "mathsf", 'output' => "", 'codes' => 'sans-serif'],
-    ['input' => "sfit", 'tag' => "", 'ttype' => $UNARY, 'output' => "", 'codes' => 'sans-serif-italic'],
-    ['input' => "bbsf", 'tag' => "", 'ttype' => $UNARY, 'output' => "", 'codes' => 'bold-sans-serif'],
-    ['input' => "bbb", 'tag' => "", 'ttype' => $UNARY, 'tex' => "mathbb", 'output' => "", 'codes' => 'double-struck'],
-    ['input' => "cc", 'tag' => "", 'ttype' => $UNARY, 'tex' => "mathcal", 'output' => "", 'codes' => 'script'],
-    ['input' => "bbcc", 'tag' => "", 'ttype' => $UNARY, 'output' => "", 'codes' => 'bold-script'],
-    ['input' => "tt", 'tag' => "", 'ttype' => $UNARY, 'tex' => "mathtt", 'output' => "", 'codes' => 'monospace'],
-    ['input' => "fr", 'tag' => "", 'ttype' => $UNARY, 'tex' => "mathfrak", 'output' => "", 'codes' => 'fraktur'],
-    ['input' => "bbfr", 'tag' => "", 'ttype' => $UNARY, 'output' => "", 'codes' => 'bold-fraktur'],
-    ['input' => "bbit", 'tag' => "", 'ttype' => $UNARY, 'output' => "", 'codes' => 'bold-italic'],
-    ['input' => "bbsfit", 'tag' => "", 'ttype' => $UNARY, 'output' => "", 'codes' => 'sans-serif-bold-italic'],
-    ['input' => "bold", 'tag' => "", 'ttype' => $UNARY, 'output' => ""],
-    ['input' => "italic", 'tag' => "", 'ttype' => $UNARY, 'tex' => "mathit", 'output' => "", 'codes' => 'italic'],
+
+    //TODO figure out why we require a space in 'output for these code commands to work
+    ['input' => "bb", 'tag' => "", 'ttype' => $UNARY, 'tex' => "mathbf", 'output' => "bb", 'codes' => 'bold'],
+    ['input' => "sf", 'tag' => "", 'ttype' => $UNARY, 'tex' => "mathsf", 'output' => "sf", 'codes' => 'sans-serif'],
+    ['input' => "sfit", 'tag' => "", 'ttype' => $UNARY, 'output' => "sfit", 'codes' => 'sans-serif-italic'],
+    ['input' => "bbsf", 'tag' => "", 'ttype' => $UNARY, 'output' => "bbsf", 'codes' => 'bold-sans-serif'],
+    ['input' => "bbb", 'tag' => "", 'ttype' => $UNARY, 'tex' => "mathbb", 'output' => "bbb", 'codes' => 'double-struck'],
+    ['input' => "cc", 'tag' => "", 'ttype' => $UNARY, 'tex' => "mathcal", 'output' => "cc", 'codes' => 'script'],
+    ['input' => "bbcc", 'tag' => "", 'ttype' => $UNARY, 'output' => "bbcc", 'codes' => 'bold-script'],
+    ['input' => "tt", 'tag' => "", 'ttype' => $UNARY, 'tex' => "mathtt", 'output' => "tt", 'codes' => 'monospace'],
+    ['input' => "fr", 'tag' => "", 'ttype' => $UNARY, 'tex' => "mathfrak", 'output' => "fr", 'codes' => 'fraktur'],
+    ['input' => "bbfr", 'tag' => "", 'ttype' => $UNARY, 'output' => "bbrf", 'codes' => 'bold-fraktur'],
+    ['input' => "bbit", 'tag' => "", 'ttype' => $UNARY, 'output' => "bbit", 'codes' => 'bold-italic'],
+    ['input' => "bbsfit", 'tag' => "", 'ttype' => $UNARY, 'output' => "bbsfit", 'codes' => 'sans-serif-bold-italic'],
+    ['input' => "bold", 'tag' => "", 'ttype' => $UNARY, 'output' => "bold"],
 ];
 
 
@@ -775,12 +765,18 @@ class AMserver
 
     function AMremoveCharsAndBlanks(string $str, int $n)
     {
-        //remove n characters and any following blanks
-        if ($str[$n] == "\\" and $str[$n + 1] != "\\" and $str[$n + 1] != " ")
-            $st = substr($str, $n, 1);
-        else $st = substr($str, $n);
-        for ($i = 0; $i < strlen($st) and $st[$i] <= 32; $i = $i + 1);
-        return substr($st, $i);
+        return trim(substr($str,$n));
+
+        // //remove n characters and any following blanks
+        // if ($str[$n] == "\\" and $str[$n + 1] != "\\" and $str[$n + 1] != " ")
+        //     $st = substr($str, $n, 1);
+        // else $st = substr($str, $n);
+        // for ($i = 0; $i < strlen($st) and $st[$i] <= 32; $i = $i + 1);
+
+        // $slice =substr($st,$i);
+        // printNice("str: '{$str}', n: {$n}, returns '{$slice}' of {$i}");
+
+        // return trim(substr($str, $n));
     }
 
     function position(array $arr, string $str, int $n)
@@ -862,7 +858,7 @@ class AMserver
         } else {
             $k = 2;
             $st = substr($str, 0, 1); //take 1 character
-            $tagst = (("A" > $st or $st > "Z") and ("a" > $st or $st > "z") ? "mo" : "mi");
+            $tagst = (("A" > $st or $st > "Z") and ("a" > $st or $st > "z")) ? "mo" : "mi";
         }
         if ($st == "-" and $str[1] !== ' ' and $this->AMpreviousSymbol == $INFIX) {
             $this->AMcurrentSymbol = $INFIX;  //trick "/" into recognizing "-" on second parse
@@ -917,7 +913,6 @@ class AMserver
             case $UNDEROVER:
             case $CONST:
                 $str = $this->AMremoveCharsAndBlanks($str, strlen($symbol['input']));
-                printNice($symbol);
                 return [$this->createMmlNode(
                     $symbol['tag'],        //its a constant
                     $this->createTextNode($symbol['output'])
@@ -1053,10 +1048,10 @@ class AMserver
                     $node->appendChild($accnode);
                     return [$node, $result[1]];
                 } else if ($symbol['input'] == "bold") {
-                    $result[0]->style['fontWeight'] = "bold";
+                    $result[0]->style .= "font-weight:bold;";
                     return [$result[0], $result[1]];
                 } else if ($symbol['input'] == "italic") {
-                    $result[0]->style['fontStyle'] = "italic";
+                    $result[0]->style .= "font-style:italic";
                     return [$result[0], $result[1]];
                 } else {                        // font change command
                     if (isset($symbol['codes'])) {
@@ -1090,7 +1085,7 @@ class AMserver
                     $node = $this->createMmlNode($symbol['tag'], $result2[0]);
 
                     // Set the correct attribute
-                    if ($symbol['input'] === "color") $node->setAttribute("mathcolor", $st);
+                    if ($symbol['input'] === "color") $node->style .= "color:$st;";
                     else if ($symbol['input'] === "class") $node->setAttribute("class", $st);
                     else if ($symbol['input'] === "id") $node->setAttribute("id", $st);
                     return [$node, $result2[1]];
@@ -1387,16 +1382,16 @@ class AMserver
         // $str = str_replace('&gt;', ">", $str);
         // $str = str_replace('&lt;', "<",$str);
         $frag = $this->AMparseExpr(str_replace('^', "", $str));
-        $node = $this->createMmlNode("mstyle", $frag);
+        $node = $this->createMmlNode("mstyle", $frag[0]);
         if ($this->mathcolor != "") $node->setAttribute("mathcolor", $this->mathcolor);
         if ($this->mathfontsize != "") {
             $node->setAttribute("fontsize", $this->mathfontsize);
             $node->setAttribute("mathsize", $this->mathfontsize);
         }
-        if ($this->mathfontfamily != "") {
-            $node->setAttribute("fontfamily", $this->mathfontfamily);
-            $node->setAttribute("mathvariant", $this->mathfontfamily);
-        }
+        // if ($this->mathfontfamily != "") {
+        //     $node->setAttribute("fontfamily", $this->mathfontfamily);
+        //     $node->setAttribute("mathvariant", $this->mathfontfamily);
+        // }
 
         if ($this->displaystyle)
             $node->setAttribute("displaystyle", "true");
@@ -1408,35 +1403,3 @@ class AMserver
         return $node->flatten();
     }
 }
-
-
-
-function testAMNode(): string
-{
-    $node = new AMNode('div');
-    $node->appendChild(new AMNode('p'));
-    $node->appendChild(new AMNode('span'));
-    $node->appendChild(new AMNode('#text', 'this is a test'));
-    $node2 = new AMNode('page');
-    $node2->appendChild($node);
-    return htmlentities($node2->flatten());
-}
-
-
-
-
-$html = "";
-$html .= "<!DOCTYPE html><html>";
-$html .= "<head></head>";
-$html .= "<body>";
-
-$html .= "<br>alive<br>";
-$html .= testAMNode();
-
-$am = new AMserver();
-$html .= $am->parseMath('abc');
-
-$html .= "</body>";
-$html .= "</body>";
-
-echo $html;

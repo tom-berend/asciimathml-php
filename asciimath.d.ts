@@ -53,7 +53,7 @@ export declare class AMserver {
     addmathvariant: boolean;
     cancelColor: string;
     constructor();
-    cancelStyle(): string;
+    cancelStyle(color: string): string;
     createMmlNode(t: string, frag?: AMNode): AMNode;
     /** replaces document.createTextNode() */
     createTextNode(content: string): AMNode;

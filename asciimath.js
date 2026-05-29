@@ -166,8 +166,7 @@ export class AMNode {
                 html += this.children[i].flatten();
             }
         }
-        html += `</${this.nodeName}${style}>`;
-        console.log(html);
+        html += `</${this.nodeName}>`;
         return html;
     }
 }
@@ -482,26 +481,25 @@ let AMsymbols = [
     { input: "obrace", tag: "mover", output: "\u23DE", tex: "overbrace", ttype: UNARYUNDEROVER, acc: true },
     { input: "text", tag: "mtext", output: "text", tex: null, ttype: TEXT },
     { input: "mbox", tag: "mtext", output: "mbox", tex: null, ttype: TEXT },
-    { input: "color", tag: "mstyle", output: "", ttype: BINARY },
-    { input: "id", tag: "mrow", output: "", ttype: BINARY },
-    { input: "class", tag: "mrow", output: "", ttype: BINARY },
+    { input: "color", tag: "mrow", output: " ", ttype: BINARY },
+    { input: "id", tag: "mrow", output: " ", ttype: BINARY },
+    { input: "class", tag: "mrow", output: " ", ttype: BINARY },
     { input: "cancel", tag: "mrow", output: "cancel", tex: null, ttype: UNARY },
     AMquote,
     //TODO figure out why we require a space in 'output for these code commands to work
-    { input: "bb", tag: "", ttype: UNARY, tex: "mathbf", output: " ", codes: 'bold' },
-    { input: "sf", tag: "", ttype: UNARY, tex: "mathsf", output: " ", codes: 'sans-serif' },
-    { input: "sfit", tag: "", ttype: UNARY, output: " ", codes: 'sans-serif-italic' },
-    { input: "bbsf", tag: "", ttype: UNARY, output: " ", codes: 'bold-sans-serif' },
-    { input: "bbb", tag: "", ttype: UNARY, tex: "mathbb", output: " ", codes: 'double-struck' },
-    { input: "cc", tag: "", ttype: UNARY, tex: "mathcal", output: " ", codes: 'script' },
-    { input: "bbcc", tag: "", ttype: UNARY, output: " ", codes: 'bold-script' },
-    { input: "tt", tag: "", ttype: UNARY, tex: "mathtt", output: " ", codes: 'monospace' },
-    { input: "fr", tag: "", ttype: UNARY, tex: "mathfrak", output: " ", codes: 'fraktur' },
-    { input: "bbfr", tag: "", ttype: UNARY, output: " ", codes: 'bold-fraktur' },
-    { input: "bbit", tag: "", ttype: UNARY, output: " ", codes: 'bold-italic' },
-    { input: "bbsfit", tag: "", ttype: UNARY, output: " ", codes: 'sans-serif-bold-italic' },
-    { input: "bold", tag: "mrow", ttype: UNARY, output: " ", codes: 'bold' },
-    { input: "italic", tag: "mrow", ttype: UNARY, tex: "mathit", output: " ", codes: 'italic' }
+    { input: "bb", ttype: UNARY, tex: "mathbf", codes: "bold", tag: "", output: "bb" },
+    { input: "sf", ttype: UNARY, tex: "mathsf", codes: "sans-serif", tag: "", output: "sf" },
+    { input: "sfit", ttype: UNARY, tex: null, codes: "sans-serif-italic", tag: "", output: "sfit" },
+    { input: "bbsf", ttype: UNARY, tex: null, codes: "bold-sans-serif", tag: "", output: "bbsf" },
+    { input: "bbb", ttype: UNARY, tex: "mathbb", codes: "double-struck", tag: "", output: "bbb" },
+    { input: "cc", ttype: UNARY, tex: "mathcal", codes: "script", tag: "", output: "cc" },
+    { input: "bbcc", ttype: UNARY, tex: null, codes: "bold-script", tag: "", output: "bbcc" },
+    { input: "tt", ttype: UNARY, tex: "mathtt", codes: "monospace", tag: "", output: "tt" },
+    { input: "fr", ttype: UNARY, tex: "mathfrak", codes: "fraktur", tag: "", output: "fr" },
+    { input: "bbfr", ttype: UNARY, tex: null, codes: "bold-fraktur", tag: "", output: "bbfr" },
+    { input: "bbit", ttype: UNARY, tex: null, codes: "bold-italic", tag: "", output: "bbit" },
+    { input: "bbsfit", ttype: UNARY, tex: null, codes: "sans-serif-bold-italic", tag: "", output: "bbsfit" },
+    { input: "bold", tex: null, ttype: UNARY, codes: "bold", tag: "", output: "bold" },
 ];
 /*Parsing ASCII math expressions with the following grammar
 v ::= [A-Za-z] | greek letters | numbers | other constant symbols
@@ -532,16 +530,15 @@ export class AMserver {
         this.cancelColor = 'red'; // sets default color for cancel
         this.initSymbols();
     }
-    cancelStyle() {
+    cancelStyle(color) {
         return `
             padding-left:0.5em;
             padding-right:0.5em;
             background:linear-gradient(to top left,
-                    rgba(0, 0, 0, 0) 0,
-                    rgba(0, 0, 0, 0) calc(50% - 1px),
-                    ${this.cancelColor},
-                    rgba(0, 0, 0, 0) calc(50% + 1px))
-            `;
+                    white 0,
+                    white calc(50% - 1px),
+                    ${color},
+                    white calc(50% + 1px)) `;
     }
     createMmlNode(t, frag) {
         let node = new AMNode(t);
@@ -607,6 +604,7 @@ export class AMserver {
             st = str.slice(n);
         for (i = 0; i < st.length && st.charCodeAt(i) <= 32; i = i + 1)
             ;
+        console.log(`str: '${str}', n: ${n}, returns '${st.slice(i)}' of ${i}`);
         return st.slice(i);
     }
     position(arr, str, n) {
@@ -691,7 +689,7 @@ export class AMserver {
         else {
             k = 2;
             st = str.slice(0, 1); //take 1 character
-            tagst = (("A" > st || st > "Z") && ("a" > st || st > "z") ? "mo" : "mi");
+            tagst = (("A" > st || st > "Z") && ("a" > st || st > "z")) ? "mo" : "mi";
         }
         if (st == "-" && str.charAt(1) !== ' ' && this.AMpreviousSymbol == INFIX) {
             this.AMcurrentSymbol = INFIX; //trick "/" into recognizing "-" on second parse
@@ -724,7 +722,6 @@ export class AMserver {
         let symbol, node, result, i, st; // rightvert = false,
         str = this.AMremoveCharsAndBlanks(str, 0);
         symbol = this.AMgetSymbol(str); //either a token or a bracket or empty
-        console.warn('OLD AMparseSexpr', str, symbol);
         if (symbol == null || symbol.ttype == RIGHTBRACKET && this.AMnestingDepth > 0) {
             return [this.createTextNode(' '), str]; // a bit of a hack, can't return null anymore
         }
@@ -733,6 +730,7 @@ export class AMserver {
             str = symbol.output + this.AMremoveCharsAndBlanks(str, symbol.input.length);
             symbol = this.AMgetSymbol(str);
         }
+        console.warn('AMparseSexpr switch', symbol.ttype);
         switch (symbol.ttype) {
             case UNDEROVER:
             case CONST:
@@ -740,9 +738,11 @@ export class AMserver {
                 if (symbol.tag === 'mspace') {
                     node = this.createMmlNode(symbol.tag);
                     node.setAttribute("width", symbol.output + "em");
+                    console.warn('AMparseSexpr returns', node, str);
                     return [node, str];
                 }
                 else {
+                    console.warn('AMparseSexpr returns', 'something', str, symbol);
                     return [this.createMmlNode(symbol.tag, //its a constant
                         this.createTextNode(symbol.output)), str];
                 }
@@ -805,7 +805,6 @@ export class AMserver {
             case UNARY:
                 str = this.AMremoveCharsAndBlanks(str, symbol.input.length);
                 result = this.AMparseSexpr(str);
-                console.log('unary result', result);
                 if (result[0] == null) {
                     if (symbol.tag == "mi" || symbol.tag == "mo") {
                         return [this.createMmlNode(symbol.tag, this.createTextNode(symbol.output)), str];
@@ -838,7 +837,7 @@ export class AMserver {
                 }
                 else if (symbol.input == "cancel") { // cancel
                     node = this.createMmlNode(symbol.tag, result[0]);
-                    node.style += this.cancelStyle();
+                    node.style += this.cancelStyle(this.cancelColor);
                     return [node, result[1]];
                 }
                 else if (typeof symbol.acc == "boolean" && symbol.acc) { // accent
@@ -866,7 +865,7 @@ export class AMserver {
                     return [node, result[1]];
                 }
                 else if (symbol.input == "bold") {
-                    result[0].style += " font-weight:bold;";
+                    result[0].style += "font-weight:bold;";
                     return [result[0], result[1]];
                 }
                 else if (symbol.input == "italic") {
@@ -1007,6 +1006,7 @@ export class AMserver {
         }
     }
     AMparseIexpr(str) {
+        console.warn('AMparseIexpr', str);
         let symbol, sym1, sym2, node, result, underover;
         str = this.AMremoveCharsAndBlanks(str, 0);
         sym1 = this.AMgetSymbol(str);
@@ -1064,9 +1064,12 @@ export class AMserver {
         return [node, str];
     }
     AMparseExpr(str, rightbracket = false) {
-        let symbol, node, result, i;
-        let newFrag = this.createDocumentFragment();
+        console.warn('AMparseExpr', str);
+        var symbol, node, result, i, newFrag = this.createDocumentFragment();
+        let safety = 0;
         do {
+            if (safety++ > 100)
+                throw new Error('looping');
             str = this.AMremoveCharsAndBlanks(str, 0);
             result = this.AMparseIexpr(str);
             node = result[0];
@@ -1090,24 +1093,25 @@ export class AMserver {
                 newFrag.appendChild(node);
         } while ((symbol.ttype != RIGHTBRACKET &&
             (symbol.ttype != LEFTRIGHT || rightbracket)
-            || this.AMnestingDepth == 0) && symbol != null && symbol.output != "");
+            || this.AMnestingDepth == 0)
+            && symbol != null && symbol.output != "");
         if (symbol.ttype == RIGHTBRACKET || symbol.ttype == LEFTRIGHT) {
-            //    if (this.AMnestingDepth > 0) this.AMnestingDepth--;
-            let len = newFrag.childNodes.length;
+            //    if (AMnestingDepth > 0) AMnestingDepth--;
+            var len = newFrag.childNodes.length;
             if (len > 0 && newFrag.childNodes[len - 1].nodeName == "mrow"
-                && newFrag.childNodes[len - 1].lastChild.hasChildNodes()
+                && newFrag.childNodes[len - 1].lastChild
                 && newFrag.childNodes[len - 1].lastChild.firstChild) { //matrix
                 //removed to allow row vectors: //&& len>1 &&
                 //newFrag.childNodes[len-2].nodeName == "mo" &&
                 //newFrag.childNodes[len-2].firstChild.nodeValue == ","
-                let right = newFrag.childNodes[len - 1].lastChild.firstChild.nodeValue;
+                var right = newFrag.childNodes[len - 1].lastChild.firstChild.nodeValue;
                 if (right == ")" || right == "]") {
-                    let left = newFrag.childNodes[len - 1].firstChild.firstChild.nodeValue;
+                    var left = newFrag.childNodes[len - 1].firstChild.firstChild.nodeValue;
                     if (left == "(" && right == ")" && symbol.output != "}" ||
                         left == "[" && right == "]") {
-                        let pos = []; // positions of commas
-                        let matrix = true;
-                        let m = newFrag.childNodes.length;
+                        var pos = []; // positions of commas
+                        var matrix = true;
+                        var m = newFrag.childNodes.length;
                         for (i = 0; matrix && i < m; i = i + 2) {
                             pos[i] = [];
                             node = newFrag.childNodes[i];
@@ -1115,29 +1119,29 @@ export class AMserver {
                                 matrix = node.nodeName == "mrow" &&
                                     (i == m - 1 || node.nextSibling.nodeName == "mo" &&
                                         node.nextSibling.firstChild.nodeValue == this.listseparator) &&
-                                    node.firstChild.firstChild !== null &&
+                                    node.firstChild.firstChild &&
                                     node.firstChild.firstChild.nodeValue == left &&
-                                    node.lastChild.firstChild !== null &&
+                                    node.lastChild.firstChild &&
                                     node.lastChild.firstChild.nodeValue == right;
                             if (matrix)
-                                for (let j = 0; j < node.childNodes.length; j++)
+                                for (var j = 0; j < node.childNodes.length; j++)
                                     if (node.childNodes[j].firstChild.nodeValue == this.listseparator)
                                         pos[i][pos[i].length] = j;
                             if (matrix && i > 1)
                                 matrix = pos[i].length == pos[i - 2].length;
                         }
                         matrix = matrix && (pos.length > 1 || pos[0].length > 0);
-                        let columnlines = [];
+                        var columnlines = [];
                         if (matrix) {
-                            let row, frag, n, k, table = this.createDocumentFragment();
+                            var n, k, table = this.createDocumentFragment();
                             for (i = 0; i < m; i = i + 2) {
-                                row = this.createDocumentFragment();
-                                frag = this.createDocumentFragment();
+                                let row = this.createDocumentFragment();
+                                let frag = this.createDocumentFragment();
                                 node = newFrag.firstChild; // <mrow>(-,-,...,-,-)</mrow>
                                 n = node.childNodes.length;
                                 k = 0;
                                 node.removeChild(node.firstChild); //remove (
-                                for (let j = 1; j < n - 1; j++) {
+                                for (j = 1; j < n - 1; j++) {
                                     if (typeof pos[i][k] != "undefined" && j == pos[i][k]) {
                                         node.removeChild(node.firstChild); //remove ,
                                         if (node.firstChild.nodeName == "mrow" && node.firstChild.childNodes.length == 1 &&
@@ -1201,10 +1205,10 @@ export class AMserver {
             node.setAttribute("fontsize", this.mathfontsize);
             node.setAttribute("mathsize", this.mathfontsize);
         }
-        if (this.mathfontfamily != "") {
-            node.setAttribute("fontfamily", this.mathfontfamily);
-            node.setAttribute("mathvariant", this.mathfontfamily);
-        }
+        // if (this.mathfontfamily != "") {
+        //     node.setAttribute("fontfamily", this.mathfontfamily);
+        //     node.setAttribute("mathvariant", this.mathfontfamily);
+        // }
         if (this.displaystyle)
             node.setAttribute("displaystyle", "true");
         node = this.createMmlNode("math", node);
