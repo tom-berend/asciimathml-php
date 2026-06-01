@@ -55,7 +55,14 @@ function printNiceHelper(mixed $elem, $max_level = 10, $print_nice_stack = array
 
     if (is_string($elem)) {
         //$HTML .= htmlentities($elem).'<br>';
-        $HTML .= $elem;
+        // $elem = str_replace(' ','@',$elem);
+        $HTML .= "<b>{$elem}</b>";
+        return ($HTML);
+    }
+
+    if (is_numeric($elem)) {
+        //$HTML .= htmlentities($elem).'<br>';
+        $HTML .= strval($elem);
         return ($HTML);
     }
 
@@ -98,13 +105,13 @@ function printNiceHelper(mixed $elem, $max_level = 10, $print_nice_stack = array
         return ($HTML);
     }
     if (null === $elem) {
-        $HTML .= "<font color=green>NULL</font>";
+        $HTML .= "<b>NULL</b>";
     } elseif (0 === $elem) {
         $HTML .= "0";
     } elseif (true === $elem) {
-        $HTML .= "<font color=green>TRUE</font>";
+        $HTML .= "<span style ='color:green;'>TRUE</span>";
     } elseif (false === $elem) {
-        $HTML .= "<font color=green>FALSE</font>";
+        $HTML .= "<span style ='color:red;'>FALSE</span>";
     } elseif ("" === $elem) {
         $HTML .= "<font color=green>EMPTY STRING</font>";
     } else {
@@ -156,17 +163,15 @@ foreach (['Plaintext', 'ASCIIMathML.js', 'asciimath.ts', 'comment'] as $title) {
     $html .= "<th>$title</th>";
 }
 
-
 testSuite();
 $html .= '</table>';
-$html .= "/<body>";
-$html .= "/<html>";
+$html .= "</body>";
+$html .= "</html>";
 echo $html;
 
 function appnd(string $str, string $comment = '')
 {
     global $html, $am;
-    // $am = new AMserver();
     $result = $am->parseMath($str);
     $neutered = str_replace('<', '&lt;', $result);
     $html .= "<tr><td>{$str}</td
@@ -234,29 +239,31 @@ function testSuite()
     // appnd('bold(a)');
     // appnd(' a  bold(b) c');
     // appnd(' a  bold b c');
-    appnd('hat(a)');
-
-
-    return;
+    // appnd('hat(a)');
+    appnd('c thinspace d ');
     // appnd('a mspace(5)b mspace(1em)c thinspace thinspace d ');
-    // appnd('i thinspace am " normal"');
 
 
-    appnd('bb abb b');
-    appnd('bb " bb " bb c bb(c)');
-    appnd('sf " sf " sf c sf(c)');
-    appnd('sfit " sfit " sfit c sfit(c)');
-    appnd('bbsf " bbsf " bbsf c bbsf(c)');
-    appnd('bbb " bbb " bbb c bbb(c)');
-    appnd('bbcc " bbcc " bbcc c');
-    appnd('tt " tt " tt c tt(c) ');
-    appnd('fr " fr " fr c fr(c) ');
-    appnd('bbfr " bbfr " bbfr c bbfr(c)');
-    appnd('bbit " bbit " bbit c bbit(c)');
-    appnd('bbsfit " bbsfit " bbsfit c bbsfit(c)');
-    appnd('bold " bold " bold c bold(c)');
+    // appnd('"a"b');
 
-    appnd('a color(red) b color(black) c');
+
+
+    // appnd('bb abb b');
+    // appnd('bb " bb " bb c bb(c)');
+    // appnd('sf " sf " sf c sf(c)');
+    // appnd('sfit " sfit " sfit c sfit(c)');
+    // appnd('bbsf " bbsf " bbsf c bbsf(c)');
+    // appnd('bbb " bbb " bbb c bbb(c)');
+    // appnd('bbcc " bbcc " bbcc c');
+    // appnd('tt " tt " tt c tt(c) ');
+    // appnd('fr " fr " fr c fr(c) ');
+    // appnd('bbfr " bbfr " bbfr c bbfr(c)');
+    // appnd('bbit " bbit " bbit c bbit(c)');
+    // appnd('bbsfit " bbsfit " bbsfit c bbsfit(c)');
+    // appnd('bold " bold " bold c bold(c)');
+
+    // appnd('a color(red) b color(black) c');
+    return;
 
     appnd('cancel (x/y)');
     appnd('cancel (x/y)');

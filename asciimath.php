@@ -110,6 +110,7 @@ class AMNode
 
     function setAttribute(string $key, mixed $value): AMNode
     {
+        printNice($key,$value);
         $this->attributes[$key] = $value;
         return $this;
     }
@@ -197,9 +198,8 @@ class AMNode
         $html = '';
 
         $style = (strlen($this->style) > 0) ? " style = '{$this->style}'" : "";
+        printNice($this->attributes,$this->nodeName);
         if ($this->nodeName !== '#text' and $this->nodeName !== '') {
-
-
 
             $attributes = '';
             foreach ($this->attributes as $key => $value) {
@@ -221,7 +221,7 @@ class AMNode
         }
         // $html .= 'e';
         $html .= "</{$this->nodeName}>";
-
+printNice($html);
         return $html;
     }
 }
@@ -333,128 +333,128 @@ $fixphi = true;          //false to return to legacy phi/varphi mapping
 
 $AMsymbols = [
     //some greek symbols
-    ['input' => "alpha", 'tag' => "mi", 'output' => "\u03B1", 'tex' => null, 'ttype' => $CONST],
-    ['input' => "beta", 'tag' => "mi", 'output' => "\u03B2", 'tex' => null, 'ttype' => $CONST],
-    ['input' => "chi", 'tag' => "mi", 'output' => "\u03C7", 'tex' => null, 'ttype' => $CONST],
-    ['input' => "delta", 'tag' => "mi", 'output' => "\u03B4", 'tex' => null, 'ttype' => $CONST],
-    ['input' => "Delta", 'tag' => "mo", 'output' => "\u0394", 'tex' => null, 'ttype' => $CONST],
-    ['input' => "epsi", 'tag' => "mi", 'output' => "\u03B5", 'tex' => "epsilon", 'ttype' => $CONST],
-    ['input' => "varepsilon", 'tag' => "mi", 'output' => "\u025B", 'tex' => null, 'ttype' => $CONST],
-    ['input' => "eta", 'tag' => "mi", 'output' => "\u03B7", 'tex' => null, 'ttype' => $CONST],
-    ['input' => "gamma", 'tag' => "mi", 'output' => "\u03B3", 'tex' => null, 'ttype' => $CONST],
-    ['input' => "Gamma", 'tag' => "mo", 'output' => "\u0393", 'tex' => null, 'ttype' => $CONST],
-    ['input' => "iota", 'tag' => "mi", 'output' => "\u03B9", 'tex' => null, 'ttype' => $CONST],
-    ['input' => "kappa", 'tag' => "mi", 'output' => "\u03BA", 'tex' => null, 'ttype' => $CONST],
-    ['input' => "lambda", 'tag' => "mi", 'output' => "\u03BB", 'tex' => null, 'ttype' => $CONST],
-    ['input' => "Lambda", 'tag' => "mo", 'output' => "\u039B", 'tex' => null, 'ttype' => $CONST],
-    ['input' => "lamda", 'tag' => "mi", 'output' => "\u03BB", 'tex' => null, 'ttype' => $CONST],
-    ['input' => "Lamda", 'tag' => "mo", 'output' => "\u039B", 'tex' => null, 'ttype' => $CONST],
-    ['input' => "mu", 'tag' => "mi", 'output' => "\u03BC", 'tex' => null, 'ttype' => $CONST],
-    ['input' => "nu", 'tag' => "mi", 'output' => "\u03BD", 'tex' => null, 'ttype' => $CONST],
-    ['input' => "omega", 'tag' => "mi", 'output' => "\u03C9", 'tex' => null, 'ttype' => $CONST],
-    ['input' => "Omega", 'tag' => "mo", 'output' => "\u03A9", 'tex' => null, 'ttype' => $CONST],
-    ['input' => "phi", 'tag' => "mi", 'output' => ($fixphi ? "\u03D5" : "\u03C6"), 'tex' => null, 'ttype' => $CONST],
-    ['input' => "varphi", 'tag' => "mi", 'output' => ($fixphi ? "\u03C6" : "\u03D5"), 'tex' => null, 'ttype' => $CONST],
-    ['input' => "Phi", 'tag' => "mo", 'output' => "\u03A6", 'tex' => null, 'ttype' => $CONST],
-    ['input' => "pi", 'tag' => "mi", 'output' => "\u03C0", 'tex' => null, 'ttype' => $CONST],
-    ['input' => "Pi", 'tag' => "mo", 'output' => "\u03A0", 'tex' => null, 'ttype' => $CONST],
-    ['input' => "psi", 'tag' => "mi", 'output' => "\u03C8", 'tex' => null, 'ttype' => $CONST],
-    ['input' => "Psi", 'tag' => "mi", 'output' => "\u03A8", 'tex' => null, 'ttype' => $CONST],
-    ['input' => "rho", 'tag' => "mi", 'output' => "\u03C1", 'tex' => null, 'ttype' => $CONST],
-    ['input' => "sigma", 'tag' => "mi", 'output' => "\u03C3", 'tex' => null, 'ttype' => $CONST],
-    ['input' => "Sigma", 'tag' => "mo", 'output' => "\u03A3", 'tex' => null, 'ttype' => $CONST],
-    ['input' => "tau", 'tag' => "mi", 'output' => "\u03C4", 'tex' => null, 'ttype' => $CONST],
-    ['input' => "theta", 'tag' => "mi", 'output' => "\u03B8", 'tex' => null, 'ttype' => $CONST],
-    ['input' => "vartheta", 'tag' => "mi", 'output' => "\u03D1", 'tex' => null, 'ttype' => $CONST],
-    ['input' => "Theta", 'tag' => "mo", 'output' => "\u0398", 'tex' => null, 'ttype' => $CONST],
-    ['input' => "upsilon", 'tag' => "mi", 'output' => "\u03C5", 'tex' => null, 'ttype' => $CONST],
-    ['input' => "xi", 'tag' => "mi", 'output' => "\u03BE", 'tex' => null, 'ttype' => $CONST],
-    ['input' => "Xi", 'tag' => "mo", 'output' => "\u039E", 'tex' => null, 'ttype' => $CONST],
-    ['input' => "zeta", 'tag' => "mi", 'output' => "\u03B6", 'tex' => null, 'ttype' => $CONST],
+    ['input' => "alpha", 'tag' => "mi", 'output' => "\u{03B1}", 'tex' => null, 'ttype' => $CONST],
+    ['input' => "beta", 'tag' => "mi", 'output' => "\u{03B2}", 'tex' => null, 'ttype' => $CONST],
+    ['input' => "chi", 'tag' => "mi", 'output' => "\u{03C7}", 'tex' => null, 'ttype' => $CONST],
+    ['input' => "delta", 'tag' => "mi", 'output' => "\u{03B4}", 'tex' => null, 'ttype' => $CONST],
+    ['input' => "Delta", 'tag' => "mo", 'output' => "\u{0394}", 'tex' => null, 'ttype' => $CONST],
+    ['input' => "epsi", 'tag' => "mi", 'output' => "\u{03B5}", 'tex' => "epsilon", 'ttype' => $CONST],
+    ['input' => "varepsilon", 'tag' => "mi", 'output' => "\u{025B}", 'tex' => null, 'ttype' => $CONST],
+    ['input' => "eta", 'tag' => "mi", 'output' => "\u{03B7}", 'tex' => null, 'ttype' => $CONST],
+    ['input' => "gamma", 'tag' => "mi", 'output' => "\u{03B3}", 'tex' => null, 'ttype' => $CONST],
+    ['input' => "Gamma", 'tag' => "mo", 'output' => "\u{0393}", 'tex' => null, 'ttype' => $CONST],
+    ['input' => "iota", 'tag' => "mi", 'output' => "\u{03B9}", 'tex' => null, 'ttype' => $CONST],
+    ['input' => "kappa", 'tag' => "mi", 'output' => "\u{03BA}", 'tex' => null, 'ttype' => $CONST],
+    ['input' => "lambda", 'tag' => "mi", 'output' => "\u{03BB}", 'tex' => null, 'ttype' => $CONST],
+    ['input' => "Lambda", 'tag' => "mo", 'output' => "\u{039B}", 'tex' => null, 'ttype' => $CONST],
+    ['input' => "lamda", 'tag' => "mi", 'output' => "\u{03BB}", 'tex' => null, 'ttype' => $CONST],
+    ['input' => "Lamda", 'tag' => "mo", 'output' => "\u{039B}", 'tex' => null, 'ttype' => $CONST],
+    ['input' => "mu", 'tag' => "mi", 'output' => "\u{03BC}", 'tex' => null, 'ttype' => $CONST],
+    ['input' => "nu", 'tag' => "mi", 'output' => "\u{03BD}", 'tex' => null, 'ttype' => $CONST],
+    ['input' => "omega", 'tag' => "mi", 'output' => "\u{03C9}", 'tex' => null, 'ttype' => $CONST],
+    ['input' => "Omega", 'tag' => "mo", 'output' => "\u{03A9}", 'tex' => null, 'ttype' => $CONST],
+    ['input' => "phi", 'tag' => "mi", 'output' => ($fixphi ? "\u{03D5}" : "\u{03C6}"), 'tex' => null, 'ttype' => $CONST],
+    ['input' => "varphi", 'tag' => "mi", 'output' => ($fixphi ? "\u{03C6}" : "\u{03D5}"), 'tex' => null, 'ttype' => $CONST],
+    ['input' => "Phi", 'tag' => "mo", 'output' => "\u{03A6}", 'tex' => null, 'ttype' => $CONST],
+    ['input' => "pi", 'tag' => "mi", 'output' => "\u{03C0}", 'tex' => null, 'ttype' => $CONST],
+    ['input' => "Pi", 'tag' => "mo", 'output' => "\u{03A0}", 'tex' => null, 'ttype' => $CONST],
+    ['input' => "psi", 'tag' => "mi", 'output' => "\u{03C8}", 'tex' => null, 'ttype' => $CONST],
+    ['input' => "Psi", 'tag' => "mi", 'output' => "\u{03A8}", 'tex' => null, 'ttype' => $CONST],
+    ['input' => "rho", 'tag' => "mi", 'output' => "\u{03C1}", 'tex' => null, 'ttype' => $CONST],
+    ['input' => "sigma", 'tag' => "mi", 'output' => "\u{03C3}", 'tex' => null, 'ttype' => $CONST],
+    ['input' => "Sigma", 'tag' => "mo", 'output' => "\u{03A3}", 'tex' => null, 'ttype' => $CONST],
+    ['input' => "tau", 'tag' => "mi", 'output' => "\u{03C4}", 'tex' => null, 'ttype' => $CONST],
+    ['input' => "theta", 'tag' => "mi", 'output' => "\u{03B8}", 'tex' => null, 'ttype' => $CONST],
+    ['input' => "vartheta", 'tag' => "mi", 'output' => "\u{03D1}", 'tex' => null, 'ttype' => $CONST],
+    ['input' => "Theta", 'tag' => "mo", 'output' => "\u{0398}", 'tex' => null, 'ttype' => $CONST],
+    ['input' => "upsilon", 'tag' => "mi", 'output' => "\u{03C5}", 'tex' => null, 'ttype' => $CONST],
+    ['input' => "xi", 'tag' => "mi", 'output' => "\u{03BE}", 'tex' => null, 'ttype' => $CONST],
+    ['input' => "Xi", 'tag' => "mo", 'output' => "\u{039E}", 'tex' => null, 'ttype' => $CONST],
+    ['input' => "zeta", 'tag' => "mi", 'output' => "\u{03B6}", 'tex' => null, 'ttype' => $CONST],
 
     //binary operation symbols
-    //{'input' =>"-",  'tag' =>"mo", 'output' =>"\u0096", 'tex' =>null, 'ttype' =>$CONST},
-    ['input' => "*", 'tag' => "mo", 'output' => "\u22C5", 'tex' => "cdot", 'ttype' => $CONST],
-    ['input' => "**", 'tag' => "mo", 'output' => "\u2217", 'tex' => "ast", 'ttype' => $CONST],
-    ['input' => "***", 'tag' => "mo", 'output' => "\u22C6", 'tex' => "star", 'ttype' => $CONST],
+    //{'input' =>"-",  'tag' =>"mo", 'output' =>"\u{0096}", 'tex' =>null, 'ttype' =>$CONST},
+    ['input' => "*", 'tag' => "mo", 'output' => "\u{22C5}", 'tex' => "cdot", 'ttype' => $CONST],
+    ['input' => "**", 'tag' => "mo", 'output' => "\u{2217}", 'tex' => "ast", 'ttype' => $CONST],
+    ['input' => "***", 'tag' => "mo", 'output' => "\u{22C6}", 'tex' => "star", 'ttype' => $CONST],
     ['input' => "//", 'tag' => "mo", 'output' => "/", 'tex' => null, 'ttype' => $CONST],
     ['input' => "\\\\", 'tag' => "mo", 'output' => "\\", 'tex' => "backslash", 'ttype' => $CONST],
     ['input' => "setminus", 'tag' => "mo", 'output' => "\\", 'tex' => null, 'ttype' => $CONST],
-    ['input' => "xx", 'tag' => "mo", 'output' => "\u00D7", 'tex' => "times", 'ttype' => $CONST],
-    ['input' => "|><", 'tag' => "mo", 'output' => "\u22C9", 'tex' => "ltimes", 'ttype' => $CONST],
-    ['input' => "><|", 'tag' => "mo", 'output' => "\u22CA", 'tex' => "rtimes", 'ttype' => $CONST],
-    ['input' => "|><|", 'tag' => "mo", 'output' => "\u22C8", 'tex' => "bowtie", 'ttype' => $CONST],
-    ['input' => "-=>", 'tag' => "mo", 'output' => "\u00F7", 'tex' => "div", 'ttype' => $CONST],
+    ['input' => "xx", 'tag' => "mo", 'output' => "\u{00D7}", 'tex' => "times", 'ttype' => $CONST],
+    ['input' => "|><", 'tag' => "mo", 'output' => "\u{22C9}", 'tex' => "ltimes", 'ttype' => $CONST],
+    ['input' => "><|", 'tag' => "mo", 'output' => "\u{22CA}", 'tex' => "rtimes", 'ttype' => $CONST],
+    ['input' => "|><|", 'tag' => "mo", 'output' => "\u{22C8}", 'tex' => "bowtie", 'ttype' => $CONST],
+    ['input' => "-=>", 'tag' => "mo", 'output' => "\u{00F7}", 'tex' => "div", 'ttype' => $CONST],
     ['input' => "divide", 'tag' => "mo", 'output' => "-=>", 'tex' => null, 'ttype' => $DEFINITION],
-    ['input' => "@", 'tag' => "mo", 'output' => "\u2218", 'tex' => "circ", 'ttype' => $CONST],
-    ['input' => "o+", 'tag' => "mo", 'output' => "\u2295", 'tex' => "oplus", 'ttype' => $CONST],
-    ['input' => "o-", 'tag' => "mo", 'output' => "\u2296", 'tex' => "ominus", 'ttype' => $CONST],
-    ['input' => "ox", 'tag' => "mo", 'output' => "\u2297", 'tex' => "otimes", 'ttype' => $CONST],
-    ['input' => "o->", 'tag' => "mo", 'output' => "\u2299", 'tex' => "odot", 'ttype' => $CONST],
-    ['input' => "sum", 'tag' => "mo", 'output' => "\u2211", 'tex' => null, 'ttype' => $UNDEROVER],
-    ['input' => "prod", 'tag' => "mo", 'output' => "\u220F", 'tex' => null, 'ttype' => $UNDEROVER],
-    ['input' => "^^", 'tag' => "mo", 'output' => "\u2227", 'tex' => "wedge", 'ttype' => $CONST],
-    ['input' => "^^^", 'tag' => "mo", 'output' => "\u22C0", 'tex' => "bigwedge", 'ttype' => $UNDEROVER],
-    ['input' => "vv", 'tag' => "mo", 'output' => "\u2228", 'tex' => "vee", 'ttype' => $CONST],
-    ['input' => "vvv", 'tag' => "mo", 'output' => "\u22C1", 'tex' => "bigvee", 'ttype' => $UNDEROVER],
-    ['input' => "nn", 'tag' => "mo", 'output' => "\u2229", 'tex' => "cap", 'ttype' => $CONST],
-    ['input' => "nnn", 'tag' => "mo", 'output' => "\u22C2", 'tex' => "bigcap", 'ttype' => $UNDEROVER],
-    ['input' => "uu", 'tag' => "mo", 'output' => "\u222A", 'tex' => "cup", 'ttype' => $CONST],
-    ['input' => "uuu", 'tag' => "mo", 'output' => "\u22C3", 'tex' => "bigcup", 'ttype' => $UNDEROVER],
-    ['input' => "dag", 'tag' => "mo", 'output' => "\u2020", 'tex' => "dagger", 'ttype' => $CONST],
-    ['input' => "ddag", 'tag' => "mo", 'output' => "\u2021", 'tex' => "ddagger", 'ttype' => $CONST],
+    ['input' => "@", 'tag' => "mo", 'output' => "\u{2218}", 'tex' => "circ", 'ttype' => $CONST],
+    ['input' => "o+", 'tag' => "mo", 'output' => "\u{2295}", 'tex' => "oplus", 'ttype' => $CONST],
+    ['input' => "o-", 'tag' => "mo", 'output' => "\u{2296}", 'tex' => "ominus", 'ttype' => $CONST],
+    ['input' => "ox", 'tag' => "mo", 'output' => "\u{2297}", 'tex' => "otimes", 'ttype' => $CONST],
+    ['input' => "o->", 'tag' => "mo", 'output' => "\u{2299}", 'tex' => "odot", 'ttype' => $CONST],
+    ['input' => "sum", 'tag' => "mo", 'output' => "\u{2211}", 'tex' => null, 'ttype' => $UNDEROVER],
+    ['input' => "prod", 'tag' => "mo", 'output' => "\u{220F}", 'tex' => null, 'ttype' => $UNDEROVER],
+    ['input' => "^^", 'tag' => "mo", 'output' => "\u{2227}", 'tex' => "wedge", 'ttype' => $CONST],
+    ['input' => "^^^", 'tag' => "mo", 'output' => "\u{22C0}", 'tex' => "bigwedge", 'ttype' => $UNDEROVER],
+    ['input' => "vv", 'tag' => "mo", 'output' => "\u{2228}", 'tex' => "vee", 'ttype' => $CONST],
+    ['input' => "vvv", 'tag' => "mo", 'output' => "\u{22C1}", 'tex' => "bigvee", 'ttype' => $UNDEROVER],
+    ['input' => "nn", 'tag' => "mo", 'output' => "\u{2229}", 'tex' => "cap", 'ttype' => $CONST],
+    ['input' => "nnn", 'tag' => "mo", 'output' => "\u{22C2}", 'tex' => "bigcap", 'ttype' => $UNDEROVER],
+    ['input' => "uu", 'tag' => "mo", 'output' => "\u{222A}", 'tex' => "cup", 'ttype' => $CONST],
+    ['input' => "uuu", 'tag' => "mo", 'output' => "\u{22C3}", 'tex' => "bigcup", 'ttype' => $UNDEROVER],
+    ['input' => "dag", 'tag' => "mo", 'output' => "\u{2020}", 'tex' => "dagger", 'ttype' => $CONST],
+    ['input' => "ddag", 'tag' => "mo", 'output' => "\u{2021}", 'tex' => "ddagger", 'ttype' => $CONST],
 
     //binary relation symbols
-    ['input' => "!=", 'tag' => "mo", 'output' => "\u2260", 'tex' => "ne", 'ttype' => $CONST],
+    ['input' => "!=", 'tag' => "mo", 'output' => "\u{2260}", 'tex' => "ne", 'ttype' => $CONST],
     ['input' => "=>=", 'tag' => "mo", 'output' => "=>=", 'tex' => null, 'ttype' => $CONST],
     ['input' => "lt", 'tag' => "mo", 'output' => "<", 'tex' => null, 'ttype' => $CONST],
-    ['input' => "<=", 'tag' => "mo", 'output' => "\u2264", 'tex' => "le", 'ttype' => $CONST],
-    ['input' => "lt=", 'tag' => "mo", 'output' => "\u2264", 'tex' => "leq", 'ttype' => $CONST],
+    ['input' => "<=", 'tag' => "mo", 'output' => "\u{2264}", 'tex' => "le", 'ttype' => $CONST],
+    ['input' => "lt=", 'tag' => "mo", 'output' => "\u{2264}", 'tex' => "leq", 'ttype' => $CONST],
     ['input' => "gt", 'tag' => "mo", 'output' => ">", 'tex' => null, 'ttype' => $CONST],
-    ['input' => "mlt", 'tag' => "mo", 'output' => "\u226A", 'tex' => "ll", 'ttype' => $CONST],
-    ['input' => ">=", 'tag' => "mo", 'output' => "\u2265", 'tex' => "ge", 'ttype' => $CONST],
-    ['input' => "gt=", 'tag' => "mo", 'output' => "\u2265", 'tex' => "geq", 'ttype' => $CONST],
-    ['input' => "mgt", 'tag' => "mo", 'output' => "\u226B", 'tex' => "gg", 'ttype' => $CONST],
-    ['input' => "-<", 'tag' => "mo", 'output' => "\u227A", 'tex' => "prec", 'ttype' => $CONST],
-    ['input' => "-lt", 'tag' => "mo", 'output' => "\u227A", 'tex' => null, 'ttype' => $CONST],
-    ['input' => ">-", 'tag' => "mo", 'output' => "\u227B", 'tex' => "succ", 'ttype' => $CONST],
-    ['input' => "-<=", 'tag' => "mo", 'output' => "\u2AAF", 'tex' => "preceq", 'ttype' => $CONST],
-    ['input' => ">-=", 'tag' => "mo", 'output' => "\u2AB0", 'tex' => "succeq", 'ttype' => $CONST],
-    ['input' => "in", 'tag' => "mo", 'output' => "\u2208", 'tex' => null, 'ttype' => $CONST],
-    ['input' => "!in", 'tag' => "mo", 'output' => "\u2209", 'tex' => "notin", 'ttype' => $CONST],
-    ['input' => "sub", 'tag' => "mo", 'output' => "\u2282", 'tex' => "subset", 'ttype' => $CONST],
-    ['input' => "!sub", 'tag' => "mo", 'output' => "\u2284", 'tex' => "not\\subset", 'ttype' => $CONST],
+    ['input' => "mlt", 'tag' => "mo", 'output' => "\u{226A}", 'tex' => "ll", 'ttype' => $CONST],
+    ['input' => ">=", 'tag' => "mo", 'output' => "\u{2265}", 'tex' => "ge", 'ttype' => $CONST],
+    ['input' => "gt=", 'tag' => "mo", 'output' => "\u{2265}", 'tex' => "geq", 'ttype' => $CONST],
+    ['input' => "mgt", 'tag' => "mo", 'output' => "\u{226B}", 'tex' => "gg", 'ttype' => $CONST],
+    ['input' => "-<", 'tag' => "mo", 'output' => "\u{227A}", 'tex' => "prec", 'ttype' => $CONST],
+    ['input' => "-lt", 'tag' => "mo", 'output' => "\u{227A}", 'tex' => null, 'ttype' => $CONST],
+    ['input' => ">-", 'tag' => "mo", 'output' => "\u{227B}", 'tex' => "succ", 'ttype' => $CONST],
+    ['input' => "-<=", 'tag' => "mo", 'output' => "\u{2AAF}", 'tex' => "preceq", 'ttype' => $CONST],
+    ['input' => ">-=", 'tag' => "mo", 'output' => "\u{2AB0}", 'tex' => "succeq", 'ttype' => $CONST],
+    ['input' => "in", 'tag' => "mo", 'output' => "\u{2208}", 'tex' => null, 'ttype' => $CONST],
+    ['input' => "!in", 'tag' => "mo", 'output' => "\u{2209}", 'tex' => "notin", 'ttype' => $CONST],
+    ['input' => "sub", 'tag' => "mo", 'output' => "\u{2282}", 'tex' => "subset", 'ttype' => $CONST],
+    ['input' => "!sub", 'tag' => "mo", 'output' => "\u{2284}", 'tex' => "not\\subset", 'ttype' => $CONST],
     ['input' => "notsubset", 'tag' => "mo", 'output' => "!sub", 'tex' => null, 'ttype' => $DEFINITION],
-    ['input' => "sup", 'tag' => "mo", 'output' => "\u2283", 'tex' => "supset", 'ttype' => $CONST],
-    ['input' => "!sup", 'tag' => "mo", 'output' => "\u2285", 'tex' => "not\\supset", 'ttype' => $CONST],
+    ['input' => "sup", 'tag' => "mo", 'output' => "\u{2283}", 'tex' => "supset", 'ttype' => $CONST],
+    ['input' => "!sup", 'tag' => "mo", 'output' => "\u{2285}", 'tex' => "not\\supset", 'ttype' => $CONST],
     ['input' => "notsupset", 'tag' => "mo", 'output' => "!sup", 'tex' => null, 'ttype' => $DEFINITION],
-    ['input' => "sube", 'tag' => "mo", 'output' => "\u2286", 'tex' => "subseteq", 'ttype' => $CONST],
-    ['input' => "!sube", 'tag' => "mo", 'output' => "\u2288", 'tex' => "not\\subseteq", 'ttype' => $CONST],
+    ['input' => "sube", 'tag' => "mo", 'output' => "\u{2286}", 'tex' => "subseteq", 'ttype' => $CONST],
+    ['input' => "!sube", 'tag' => "mo", 'output' => "\u{2288}", 'tex' => "not\\subseteq", 'ttype' => $CONST],
     ['input' => "notsubseteq", 'tag' => "mo", 'output' => "!sube", 'tex' => null, 'ttype' => $DEFINITION],
-    ['input' => "supe", 'tag' => "mo", 'output' => "\u2287", 'tex' => "supseteq", 'ttype' => $CONST],
-    ['input' => "!supe", 'tag' => "mo", 'output' => "\u2289", 'tex' => "not\\supseteq", 'ttype' => $CONST],
+    ['input' => "supe", 'tag' => "mo", 'output' => "\u{2287}", 'tex' => "supseteq", 'ttype' => $CONST],
+    ['input' => "!supe", 'tag' => "mo", 'output' => "\u{2289}", 'tex' => "not\\supseteq", 'ttype' => $CONST],
     ['input' => "notsupseteq", 'tag' => "mo", 'output' => "!supe", 'tex' => null, 'ttype' => $DEFINITION],
-    ['input' => "-=", 'tag' => "mo", 'output' => "\u2261", 'tex' => "equiv", 'ttype' => $CONST],
-    ['input' => "!-=", 'tag' => "mo", 'output' => "\u2262", 'tex' => "not\\equiv", 'ttype' => $CONST],
+    ['input' => "-=", 'tag' => "mo", 'output' => "\u{2261}", 'tex' => "equiv", 'ttype' => $CONST],
+    ['input' => "!-=", 'tag' => "mo", 'output' => "\u{2262}", 'tex' => "not\\equiv", 'ttype' => $CONST],
     ['input' => "notequiv", 'tag' => "mo", 'output' => "!-=", 'tex' => null, 'ttype' => $DEFINITION],
-    ['input' => "~=", 'tag' => "mo", 'output' => "\u2245", 'tex' => "cong", 'ttype' => $CONST],
-    ['input' => "~~", 'tag' => "mo", 'output' => "\u2248", 'tex' => "approx", 'ttype' => $CONST],
-    ['input' => "~", 'tag' => "mo", 'output' => "\u223C", 'tex' => "sim", 'ttype' => $CONST],
-    ['input' => "prop", 'tag' => "mo", 'output' => "\u221D", 'tex' => "propto", 'ttype' => $CONST],
+    ['input' => "~=", 'tag' => "mo", 'output' => "\u{2245}", 'tex' => "cong", 'ttype' => $CONST],
+    ['input' => "~~", 'tag' => "mo", 'output' => "\u{2248}", 'tex' => "approx", 'ttype' => $CONST],
+    ['input' => "~", 'tag' => "mo", 'output' => "\u{223C}", 'tex' => "sim", 'ttype' => $CONST],
+    ['input' => "prop", 'tag' => "mo", 'output' => "\u{221D}", 'tex' => "propto", 'ttype' => $CONST],
 
     //logical symbols
     ['input' => "and", 'tag' => "mtext", 'output' => "and", 'tex' => null, 'ttype' => $SPACE],
     ['input' => "or", 'tag' => "mtext", 'output' => "or", 'tex' => null, 'ttype' => $SPACE],
-    ['input' => "not", 'tag' => "mo", 'output' => "\u00AC", 'tex' => "neg", 'ttype' => $CONST],
-    ['input' => "=>", 'tag' => "mo", 'output' => "\u21D2", 'tex' => "implies", 'ttype' => $CONST],
+    ['input' => "not", 'tag' => "mo", 'output' => "\u{00AC}", 'tex' => "neg", 'ttype' => $CONST],
+    ['input' => "=>", 'tag' => "mo", 'output' => "\u{21D2}", 'tex' => "implies", 'ttype' => $CONST],
     ['input' => "if", 'tag' => "mo", 'output' => "if", 'tex' => null, 'ttype' => $SPACE],
-    ['input' => "<=>", 'tag' => "mo", 'output' => "\u21D4", 'tex' => "iff", 'ttype' => $CONST],
-    ['input' => "AA", 'tag' => "mo", 'output' => "\u2200", 'tex' => "forall", 'ttype' => $CONST],
-    ['input' => "EE", 'tag' => "mo", 'output' => "\u2203", 'tex' => "exists", 'ttype' => $CONST],
-    ['input' => "_|_", 'tag' => "mo", 'output' => "\u22A5", 'tex' => "bot", 'ttype' => $CONST],
-    ['input' => "TT", 'tag' => "mo", 'output' => "\u22A4", 'tex' => "top", 'ttype' => $CONST],
-    ['input' => "|--", 'tag' => "mo", 'output' => "\u22A2", 'tex' => "vdash", 'ttype' => $CONST],
-    ['input' => "|==", 'tag' => "mo", 'output' => "\u22A8", 'tex' => "models", 'ttype' => $CONST],
+    ['input' => "<=>", 'tag' => "mo", 'output' => "\u{21D4}", 'tex' => "iff", 'ttype' => $CONST],
+    ['input' => "AA", 'tag' => "mo", 'output' => "\u{2200}", 'tex' => "forall", 'ttype' => $CONST],
+    ['input' => "EE", 'tag' => "mo", 'output' => "\u{2203}", 'tex' => "exists", 'ttype' => $CONST],
+    ['input' => "_|_", 'tag' => "mo", 'output' => "\u{22A5}", 'tex' => "bot", 'ttype' => $CONST],
+    ['input' => "TT", 'tag' => "mo", 'output' => "\u{22A4}", 'tex' => "top", 'ttype' => $CONST],
+    ['input' => "|--", 'tag' => "mo", 'output' => "\u{22A2}", 'tex' => "vdash", 'ttype' => $CONST],
+    ['input' => "|==", 'tag' => "mo", 'output' => "\u{22A8}", 'tex' => "models", 'ttype' => $CONST],
 
     //grouping brackets
     ['input' => "(", 'tag' => "mo", 'output' => "(", 'tex' => "left(", 'ttype' => $LEFTBRACKET],
@@ -468,58 +468,58 @@ $AMsymbols = [
     ['input' => "|=>", 'tag' => "mo", 'output' => "|", 'tex' => null, 'ttype' => $LEFTBRACKET],
     ['input' => "=>|", 'tag' => "mo", 'output' => "|", 'tex' => null, 'ttype' => $RIGHTBRACKET],
     //{'input' =>"or", 'tag' =>"mo", 'output' =>"or", 'tex' =>null, 'ttype' =>$LEFTRIGHT},
-    ['input' => "(=>", 'tag' => "mo", 'output' => "\u2329", 'tex' => "langle", 'ttype' => $LEFTBRACKET],
-    ['input' => "=>)", 'tag' => "mo", 'output' => "\u232A", 'tex' => "rangle", 'ttype' => $RIGHTBRACKET],
-    ['input' => "<<", 'tag' => "mo", 'output' => "\u2329", 'tex' => null, 'ttype' => $LEFTBRACKET],
-    ['input' => ">>", 'tag' => "mo", 'output' => "\u232A", 'tex' => null, 'ttype' => $RIGHTBRACKET],
+    ['input' => "(=>", 'tag' => "mo", 'output' => "\u{2329}", 'tex' => "langle", 'ttype' => $LEFTBRACKET],
+    ['input' => "=>)", 'tag' => "mo", 'output' => "\u{232A}", 'tex' => "rangle", 'ttype' => $RIGHTBRACKET],
+    ['input' => "<<", 'tag' => "mo", 'output' => "\u{2329}", 'tex' => null, 'ttype' => $LEFTBRACKET],
+    ['input' => ">>", 'tag' => "mo", 'output' => "\u{232A}", 'tex' => null, 'ttype' => $RIGHTBRACKET],
     ['input' => "{=>", 'tag' => "mo", 'output' => "{=>", 'tex' => null, 'ttype' => $LEFTBRACKET, 'invisible' => true],
     ['input' => "=>}", 'tag' => "mo", 'output' => "=>}", 'tex' => null, 'ttype' => $RIGHTBRACKET, 'invisible' => true],
 
     //miscellaneous symbols
-    ['input' => "int", 'tag' => "mo", 'output' => "\u222B", 'tex' => null, 'ttype' => $CONST],
+    ['input' => "int", 'tag' => "mo", 'output' => "\u{222B}", 'tex' => null, 'ttype' => $CONST],
     ['input' => "dx", 'tag' => "mi", 'output' => "{=>d x=>}", 'tex' => null, 'ttype' => $DEFINITION],
     ['input' => "dy", 'tag' => "mi", 'output' => "{=>d y=>}", 'tex' => null, 'ttype' => $DEFINITION],
     ['input' => "dz", 'tag' => "mi", 'output' => "{=>d z=>}", 'tex' => null, 'ttype' => $DEFINITION],
     ['input' => "dt", 'tag' => "mi", 'output' => "{=>d t=>}", 'tex' => null, 'ttype' => $DEFINITION],
-    ['input' => "oint", 'tag' => "mo", 'output' => "\u222E", 'tex' => null, 'ttype' => $CONST],
-    ['input' => "del", 'tag' => "mo", 'output' => "\u2202", 'tex' => "partial", 'ttype' => $CONST],
-    ['input' => "grad", 'tag' => "mo", 'output' => "\u2207", 'tex' => "nabla", 'ttype' => $CONST],
-    ['input' => "+-", 'tag' => "mo", 'output' => "\u00B1", 'tex' => "pm", 'ttype' => $CONST],
-    ['input' => "-+", 'tag' => "mo", 'output' => "\u2213", 'tex' => "mp", 'ttype' => $CONST],
-    ['input' => "O/", 'tag' => "mo", 'output' => "\u2205", 'tex' => "emptyset", 'ttype' => $CONST],
-    ['input' => "oo", 'tag' => "mo", 'output' => "\u221E", 'tex' => "infty", 'ttype' => $CONST],
-    ['input' => "aleph", 'tag' => "mo", 'output' => "\u2135", 'tex' => null, 'ttype' => $CONST],
+    ['input' => "oint", 'tag' => "mo", 'output' => "\u{222E}", 'tex' => null, 'ttype' => $CONST],
+    ['input' => "del", 'tag' => "mo", 'output' => "\u{2202}", 'tex' => "partial", 'ttype' => $CONST],
+    ['input' => "grad", 'tag' => "mo", 'output' => "\u{2207}", 'tex' => "nabla", 'ttype' => $CONST],
+    ['input' => "+-", 'tag' => "mo", 'output' => "\u{00B1}", 'tex' => "pm", 'ttype' => $CONST],
+    ['input' => "-+", 'tag' => "mo", 'output' => "\u{2213}", 'tex' => "mp", 'ttype' => $CONST],
+    ['input' => "O/", 'tag' => "mo", 'output' => "\u{2205}", 'tex' => "emptyset", 'ttype' => $CONST],
+    ['input' => "oo", 'tag' => "mo", 'output' => "\u{221E}", 'tex' => "infty", 'ttype' => $CONST],
+    ['input' => "aleph", 'tag' => "mo", 'output' => "\u{2135}", 'tex' => null, 'ttype' => $CONST],
     ['input' => "->->->", 'tag' => "mo", 'output' => "->->->", 'tex' => "ldots", 'ttype' => $CONST],
-    ['input' => "=>->", 'tag' => "mo", 'output' => "\u2234", 'tex' => "therefore", 'ttype' => $CONST],
-    ['input' => "=>'", 'tag' => "mo", 'output' => "\u2235", 'tex' => "because", 'ttype' => $CONST],
-    ['input' => "/_", 'tag' => "mo", 'output' => "\u2220", 'tex' => "angle", 'ttype' => $CONST],
-    ['input' => "/_\\", 'tag' => "mo", 'output' => "\u25B3", 'tex' => "triangle", 'ttype' => $CONST],
-    ['input' => "'", 'tag' => "mo", 'output' => "\u2032", 'tex' => "prime", 'ttype' => $CONST],
+    ['input' => "=>->", 'tag' => "mo", 'output' => "\u{2234}", 'tex' => "therefore", 'ttype' => $CONST],
+    ['input' => "=>'", 'tag' => "mo", 'output' => "\u{2235}", 'tex' => "because", 'ttype' => $CONST],
+    ['input' => "/_", 'tag' => "mo", 'output' => "\u{2220}", 'tex' => "angle", 'ttype' => $CONST],
+    ['input' => "/_\\", 'tag' => "mo", 'output' => "\u{25B3}", 'tex' => "triangle", 'ttype' => $CONST],
+    ['input' => "'", 'tag' => "mo", 'output' => "\u{2032}", 'tex' => "prime", 'ttype' => $CONST],
     ['input' => "tilde", 'tag' => "mover", 'output' => "~", 'tex' => null, 'ttype' => $UNARY, 'acc' => true],
-    ['input' => "\\ ", 'tag' => "mo", 'output' => "\u00A0", 'tex' => null, 'ttype' => $CONST],
-    ['input' => "frown", 'tag' => "mo", 'output' => "\u2322", 'tex' => null, 'ttype' => $CONST],
-    ['input' => "quad", 'tag' => "mo", 'output' => "\u00A0\u00A0", 'tex' => null, 'ttype' => $CONST],
-    ['input' => "qquad", 'tag' => "mo", 'output' => "\u00A0\u00A0\u00A0\u00A0", 'tex' => null, 'ttype' => $CONST],
+    ['input' => "\\ ", 'tag' => "mo", 'output' => "\u{00A0}", 'tex' => null, 'ttype' => $CONST],
+    ['input' => "frown", 'tag' => "mo", 'output' => "\u{2322}", 'tex' => null, 'ttype' => $CONST],
+    ['input' => "quad", 'tag' => "mo", 'output' => "\u{00A0}\u{00A0}", 'tex' => null, 'ttype' => $CONST],
+    ['input' => "qquad", 'tag' => "mo", 'output' => "\u{00A0}\u{00A0}\u{00A0}\u{00A0}", 'tex' => null, 'ttype' => $CONST],
     ['input' => "enspace", 'tag' => "mspace", 'output' => "0.5", 'tex' => null, 'ttype' => $CONST],
     ['input' => "thinspace", 'tag' => "mspace", 'output' => "0.17", 'tex' => null, 'ttype' => $CONST],
     ['input' => "mspace", 'tag' => "mspace", 'output' => "mspace", 'tex' => null, 'ttype' => $TEXT],
-    ['input' => "cdots", 'tag' => "mo", 'output' => "\u22EF", 'tex' => null, 'ttype' => $CONST],
-    ['input' => "vdots", 'tag' => "mo", 'output' => "\u22EE", 'tex' => null, 'ttype' => $CONST],
-    ['input' => "ddots", 'tag' => "mo", 'output' => "\u22F1", 'tex' => null, 'ttype' => $CONST],
-    ['input' => "diamond", 'tag' => "mo", 'output' => "\u22C4", 'tex' => null, 'ttype' => $CONST],
-    ['input' => "square", 'tag' => "mo", 'output' => "\u25A1", 'tex' => null, 'ttype' => $CONST],
-    ['input' => "|__", 'tag' => "mo", 'output' => "\u230A", 'tex' => "lfloor", 'ttype' => $CONST],
-    ['input' => "__|", 'tag' => "mo", 'output' => "\u230B", 'tex' => "rfloor", 'ttype' => $CONST],
-    ['input' => "|~", 'tag' => "mo", 'output' => "\u2308", 'tex' => "lceiling", 'ttype' => $CONST],
-    ['input' => "~|", 'tag' => "mo", 'output' => "\u2309", 'tex' => "rceiling", 'ttype' => $CONST],
-    ['input' => "CC", 'tag' => "mo", 'output' => "\u2102", 'tex' => null, 'ttype' => $CONST],
-    ['input' => "NN", 'tag' => "mo", 'output' => "\u2115", 'tex' => null, 'ttype' => $CONST],
-    ['input' => "QQ", 'tag' => "mo", 'output' => "\u211A", 'tex' => null, 'ttype' => $CONST],
-    ['input' => "RR", 'tag' => "mo", 'output' => "\u211D", 'tex' => null, 'ttype' => $CONST],
-    ['input' => "ZZ", 'tag' => "mo", 'output' => "\u2124", 'tex' => null, 'ttype' => $CONST],
+    ['input' => "cdots", 'tag' => "mo", 'output' => "\u{22EF}", 'tex' => null, 'ttype' => $CONST],
+    ['input' => "vdots", 'tag' => "mo", 'output' => "\u{22EE}", 'tex' => null, 'ttype' => $CONST],
+    ['input' => "ddots", 'tag' => "mo", 'output' => "\u{22F1}", 'tex' => null, 'ttype' => $CONST],
+    ['input' => "diamond", 'tag' => "mo", 'output' => "\u{22C4}", 'tex' => null, 'ttype' => $CONST],
+    ['input' => "square", 'tag' => "mo", 'output' => "\u{25A1}", 'tex' => null, 'ttype' => $CONST],
+    ['input' => "|__", 'tag' => "mo", 'output' => "\u{230A}", 'tex' => "lfloor", 'ttype' => $CONST],
+    ['input' => "__|", 'tag' => "mo", 'output' => "\u{230B}", 'tex' => "rfloor", 'ttype' => $CONST],
+    ['input' => "|~", 'tag' => "mo", 'output' => "\u{2308}", 'tex' => "lceiling", 'ttype' => $CONST],
+    ['input' => "~|", 'tag' => "mo", 'output' => "\u{2309}", 'tex' => "rceiling", 'ttype' => $CONST],
+    ['input' => "CC", 'tag' => "mo", 'output' => "\u{2102}", 'tex' => null, 'ttype' => $CONST],
+    ['input' => "NN", 'tag' => "mo", 'output' => "\u{2115}", 'tex' => null, 'ttype' => $CONST],
+    ['input' => "QQ", 'tag' => "mo", 'output' => "\u{211A}", 'tex' => null, 'ttype' => $CONST],
+    ['input' => "RR", 'tag' => "mo", 'output' => "\u{211D}", 'tex' => null, 'ttype' => $CONST],
+    ['input' => "ZZ", 'tag' => "mo", 'output' => "\u{2124}", 'tex' => null, 'ttype' => $CONST],
     ['input' => "f", 'tag' => "mi", 'output' => "f", 'tex' => null, 'ttype' => $UNARY, 'func' => true],
     ['input' => "g", 'tag' => "mi", 'output' => "g", 'tex' => null, 'ttype' => $UNARY, 'func' => true],
-    ['input' => "hbar", 'tag' => "mo", 'output' => "\u210F", 'tex' => null, 'ttype' => $CONST],
+    ['input' => "hbar", 'tag' => "mo", 'output' => "\u{210F}", 'tex' => null, 'ttype' => $CONST],
 
     //standard functions
     ['input' => "lim", 'tag' => "mo", 'output' => "lim", 'tex' => null, 'ttype' => $UNDEROVER],
@@ -544,9 +544,9 @@ $AMsymbols = [
     ['input' => "csch", 'tag' => "mo", 'output' => "csch", 'tex' => null, 'ttype' => $UNARY, 'func' => true],
     ['input' => "exp", 'tag' => "mo", 'output' => "exp", 'tex' => null, 'ttype' => $UNARY, 'func' => true],
     ['input' => "abs", 'tag' => "mo", 'output' => "abs", 'tex' => null, 'ttype' => $UNARY, 'rewriteleftright' => ["|", "|"]],
-    ['input' => "norm", 'tag' => "mo", 'output' => "norm", 'tex' => null, 'ttype' => $UNARY, 'rewriteleftright' => ["\u2225", "\u2225"]],
-    ['input' => "floor", 'tag' => "mo", 'output' => "floor", 'tex' => null, 'ttype' => $UNARY, 'rewriteleftright' => ["\u230A", "\u230B"]],
-    ['input' => "ceil", 'tag' => "mo", 'output' => "ceil", 'tex' => null, 'ttype' => $UNARY, 'rewriteleftright' => ["\u2308", "\u2309"]],
+    ['input' => "norm", 'tag' => "mo", 'output' => "norm", 'tex' => null, 'ttype' => $UNARY, 'rewriteleftright' => ["\u{2225}", "\u{2225}"]],
+    ['input' => "floor", 'tag' => "mo", 'output' => "floor", 'tex' => null, 'ttype' => $UNARY, 'rewriteleftright' => ["\u{230A}", "\u{230B}"]],
+    ['input' => "ceil", 'tag' => "mo", 'output' => "ceil", 'tex' => null, 'ttype' => $UNARY, 'rewriteleftright' => ["\u{2308}", "\u{2309}"]],
     ['input' => "log", 'tag' => "mo", 'output' => "log", 'tex' => null, 'ttype' => $UNARY, 'func' => true],
     ['input' => "ln", 'tag' => "mo", 'output' => "ln", 'tex' => null, 'ttype' => $UNARY, 'func' => true],
     ['input' => "det", 'tag' => "mo", 'output' => "det", 'tex' => null, 'ttype' => $UNARY, 'func' => true],
@@ -575,21 +575,21 @@ $AMsymbols = [
     ['input' => "Abs", 'tag' => "mo", 'output' => "abs", 'tex' => null, 'ttype' => $UNARY, 'notexcopy' => true, 'rewriteleftright' => ["|", "|"]],
 
     //arrows
-    ['input' => "uarr", 'tag' => "mo", 'output' => "\u2191", 'tex' => "uparrow", 'ttype' => $CONST],
-    ['input' => "darr", 'tag' => "mo", 'output' => "\u2193", 'tex' => "downarrow", 'ttype' => $CONST],
-    ['input' => "rarr", 'tag' => "mo", 'output' => "\u2192", 'tex' => "rightarrow", 'ttype' => $CONST],
-    ['input' => "->", 'tag' => "mo", 'output' => "\u2192", 'tex' => "to", 'ttype' => $CONST],
-    ['input' => ">->", 'tag' => "mo", 'output' => "\u21A3", 'tex' => "rightarrowtail", 'ttype' => $CONST],
-    ['input' => "->>", 'tag' => "mo", 'output' => "\u21A0", 'tex' => "twoheadrightarrow", 'ttype' => $CONST],
-    ['input' => ">->>", 'tag' => "mo", 'output' => "\u2916", 'tex' => "twoheadrightarrowtail", 'ttype' => $CONST],
-    ['input' => "|->", 'tag' => "mo", 'output' => "\u21A6", 'tex' => "mapsto", 'ttype' => $CONST],
-    ['input' => "larr", 'tag' => "mo", 'output' => "\u2190", 'tex' => "leftarrow", 'ttype' => $CONST],
-    ['input' => "harr", 'tag' => "mo", 'output' => "\u2194", 'tex' => "leftrightarrow", 'ttype' => $CONST],
-    ['input' => "rArr", 'tag' => "mo", 'output' => "\u21D2", 'tex' => "Rightarrow", 'ttype' => $CONST],
-    ['input' => "lArr", 'tag' => "mo", 'output' => "\u21D0", 'tex' => "Leftarrow", 'ttype' => $CONST],
-    ['input' => "dArr", 'tag' => "mo", 'output' => "\u21D3", 'tex' => "Downarrow", 'ttype' => $CONST],
-    ['input' => "hArr", 'tag' => "mo", 'output' => "\u21D4", 'tex' => "Leftrightarrow", 'ttype' => $CONST],
-    ['input' => "rightleftharpoons", 'tag' => "mo", 'output' => "\u21CC", 'tex' => null, 'ttype' => $CONST],
+    ['input' => "uarr", 'tag' => "mo", 'output' => "\u{2191}", 'tex' => "uparrow", 'ttype' => $CONST],
+    ['input' => "darr", 'tag' => "mo", 'output' => "\u{2193}", 'tex' => "downarrow", 'ttype' => $CONST],
+    ['input' => "rarr", 'tag' => "mo", 'output' => "\u{2192}", 'tex' => "rightarrow", 'ttype' => $CONST],
+    ['input' => "->", 'tag' => "mo", 'output' => "\u{2192}", 'tex' => "to", 'ttype' => $CONST],
+    ['input' => ">->", 'tag' => "mo", 'output' => "\u{21A3}", 'tex' => "rightarrowtail", 'ttype' => $CONST],
+    ['input' => "->>", 'tag' => "mo", 'output' => "\u{21A0}", 'tex' => "twoheadrightarrow", 'ttype' => $CONST],
+    ['input' => ">->>", 'tag' => "mo", 'output' => "\u{2916}", 'tex' => "twoheadrightarrowtail", 'ttype' => $CONST],
+    ['input' => "|->", 'tag' => "mo", 'output' => "\u{21A6}", 'tex' => "mapsto", 'ttype' => $CONST],
+    ['input' => "larr", 'tag' => "mo", 'output' => "\u{2190}", 'tex' => "leftarrow", 'ttype' => $CONST],
+    ['input' => "harr", 'tag' => "mo", 'output' => "\u{2194}", 'tex' => "leftrightarrow", 'ttype' => $CONST],
+    ['input' => "rArr", 'tag' => "mo", 'output' => "\u{21D2}", 'tex' => "Rightarrow", 'ttype' => $CONST],
+    ['input' => "lArr", 'tag' => "mo", 'output' => "\u{21D0}", 'tex' => "Leftarrow", 'ttype' => $CONST],
+    ['input' => "dArr", 'tag' => "mo", 'output' => "\u{21D3}", 'tex' => "Downarrow", 'ttype' => $CONST],
+    ['input' => "hArr", 'tag' => "mo", 'output' => "\u{21D4}", 'tex' => "Leftrightarrow", 'ttype' => $CONST],
+    ['input' => "rightleftharpoons", 'tag' => "mo", 'output' => "\u{21CC}", 'tex' => null, 'ttype' => $CONST],
 
     //commands with argument
     ['input' => "sqrt", 'tag' => "msqrt", 'output' => "sqrt", 'tex' => null, 'ttype' => $UNARY],
@@ -601,15 +601,15 @@ $AMsymbols = [
     ['input' => "underset", 'tag' => "munder", 'output' => "stackrel", 'tex' => null, 'ttype' => $BINARY],
     ['input' => "_", 'tag' => "msub", 'output' => "_", 'tex' => null, 'ttype' => $INFIX],
     ['input' => "^", 'tag' => "msup", 'output' => "^", 'tex' => null, 'ttype' => $INFIX],
-    ['input' => "hat", 'tag' => "mover", 'output' => "\u0302", 'tex' => null, 'ttype' => $UNARY, 'acc' => true],
-    ['input' => "bar", 'tag' => "mover", 'output' => "\u00AF", 'tex' => "overline", 'ttype' => $UNARY, 'acc' => true],
-    ['input' => "vec", 'tag' => "mover", 'output' => "\u2192", 'tex' => null, 'ttype' => $UNARY, 'acc' => true],
+    ['input' => "hat", 'tag' => "mover", 'output' => "\u{0302}", 'tex' => null, 'ttype' => $UNARY, 'acc' => true],
+    ['input' => "bar", 'tag' => "mover", 'output' => "\u{00AF}", 'tex' => "overline", 'ttype' => $UNARY, 'acc' => true],
+    ['input' => "vec", 'tag' => "mover", 'output' => "\u{2192}", 'tex' => null, 'ttype' => $UNARY, 'acc' => true],
     ['input' => "dot", 'tag' => "mover", 'output' => "->", 'tex' => null, 'ttype' => $UNARY, 'acc' => true],
     ['input' => "ddot", 'tag' => "mover", 'output' => "->->", 'tex' => null, 'ttype' => $UNARY, 'acc' => true],
-    ['input' => "overarc", 'tag' => "mover", 'output' => "\u23DC", 'tex' => "overparen", 'ttype' => $UNARY, 'acc' => true],
-    ['input' => "ul", 'tag' => "munder", 'output' => "\u0332", 'tex' => "underline", 'ttype' => $UNARY, 'acc' => true],
-    ['input' => "ubrace", 'tag' => "munder", 'output' => "\u23DF", 'tex' => "underbrace", 'ttype' => $UNARYUNDEROVER, 'acc' => true],
-    ['input' => "obrace", 'tag' => "mover", 'output' => "\u23DE", 'tex' => "overbrace", 'ttype' => $UNARYUNDEROVER, 'acc' => true],
+    ['input' => "overarc", 'tag' => "mover", 'output' => "\u{23DC}", 'tex' => "overparen", 'ttype' => $UNARY, 'acc' => true],
+    ['input' => "ul", 'tag' => "munder", 'output' => "\u{0332}", 'tex' => "underline", 'ttype' => $UNARY, 'acc' => true],
+    ['input' => "ubrace", 'tag' => "munder", 'output' => "\u{23DF}", 'tex' => "underbrace", 'ttype' => $UNARYUNDEROVER, 'acc' => true],
+    ['input' => "obrace", 'tag' => "mover", 'output' => "\u{23DE}", 'tex' => "overbrace", 'ttype' => $UNARYUNDEROVER, 'acc' => true],
     ['input' => "text", 'tag' => "mtext", 'output' => "text", 'tex' => null, 'ttype' => $TEXT],
     ['input' => "mbox", 'tag' => "mtext", 'output' => "mbox", 'tex' => null, 'ttype' => $TEXT],
     ['input' => "color", 'tag' => "mrow", 'output' => " ", 'ttype' => $BINARY],
@@ -867,9 +867,9 @@ class AMserver
         }
         if ($st == "-" and $str[1] !== ' ' and $this->AMpreviousSymbol == $INFIX) {
             $this->AMcurrentSymbol = $INFIX;  //trick "/" into recognizing "-" on second parse
-            return ['input' => $st, 'tag' => $tagst, 'output' => ($st == "-" ? "\u2212" : $st), 'ttype' => $UNARY, 'func' => true];
+            return ['input' => $st, 'tag' => $tagst, 'output' => ($st == "-" ? "\u{2212}" : $st), 'ttype' => $UNARY, 'func' => true];
         }
-        return ['input' => $st, 'tag' => $tagst, 'output' => ($st == "-" ? "\u2212" : $st), 'ttype' => $CONST];
+        return ['input' => $st, 'tag' => $tagst, 'output' => ($st == "-" ? "\u{2212}" : $st), 'ttype' => $CONST];
     }
 
     function AMremoveBrackets(AMNode $node)
@@ -943,20 +943,20 @@ class AMserver
                 }
                 return [$node, $result[1]];
             case $TEXT:
+                $i = 0;
                 if ($symbol != $AMquote)
                     $str = $this->AMremoveCharsAndBlanks($str, strlen($symbol['input']));
-                if ($str[0] == "{") $i = $str->indexOf("}");
-                else if ($str[0] == "(") $i = $str->indexOf(")");
-                else if ($str[0] == "[") $i = $str->indexOf("]");
-                else if ($symbol == $AMquote) $i = $str->slice(1)->indexOf("\"") + 1;
+                if ($str[0] == "{") $i = strpos($str,"}");
+                else if ($str[0] == "(") $i = strpos($str, ")");
+                else if ($str[0] == "[") $i = strpos($str,"]");
+                else if ($str[0] == $AMquote['input']) $i = strpos($str, $AMquote['input'],1);
                 else $i = 0;
-                if ($i == -1) $i = strlen($str);
-                $st = substr($str, 1, $i);
+                if ($i == false) $i = strlen($str);  // a strpos failed
+                $st = substr($str, 1,$i-1);
+                printNice("str: '{$str}', st:'{$st}', i:{$i}");
                 if ($symbol['input'] === 'mspace') { // special case
 
-                    //    let m = st.match(/^(-?[\d\.]+)\s*(em|mu)?$/);
-                    preg_match('^(-?[\d\.]+)\s*(em|mu)?$', $st, $m);
-
+                    preg_match('/^(-?[\d\.]+)\s*(em|mu)?$/', $st, $m);
                     if (!$m) {
                         $st = "0em";
                     } else if (!$m[2] || $m[2] == "mu") {
@@ -967,8 +967,8 @@ class AMserver
                     $str = $this->AMremoveCharsAndBlanks($str, $i + 1);
                     return [$node, $str];
                 }
-
-                if ($st[0] == " ") {
+                printNice($st,strlen($st));
+                if (substr($st,0,1)== " ") {
                     $node = $this->createMmlNode("mspace");
                     $node->setAttribute("width", "1ex");
                     $newFrag->appendChild($node);
@@ -1131,7 +1131,7 @@ class AMserver
                     $node->appendChild($result[0]);
                     return [$node, $result[1]];
                 } else { // the "|" is a \mid so use unicode 2223 (divides) for spacing
-                    $node = $this->createMmlNode("mo", $this->createTextNode("\u2223"));
+                    $node = $this->createMmlNode("mo", $this->createTextNode("\u{2223}"));
                     $node = $this->createMmlNode("mrow", $node);
                     return [$node, $str];
                 }
@@ -1212,7 +1212,7 @@ class AMserver
             //    if ($symbol['input'] == "/") $result = AMparseIexpr($str); else ->->->
             $result = $this->AMparseSexpr($str);
             if ($result[0] == null) // show box in place of missing argument
-                $result[0] = $this->createMmlNode("mo", $this->createTextNode("\u25A1"));
+                $result[0] = $this->createMmlNode("mo", $this->createTextNode("\u{25A1}"));
             else $this->AMremoveBrackets($result[0]);
             $str = $result[1];
             //    if ($symbol['input'] == "/") AMremoveBrackets($node);
@@ -1270,7 +1270,7 @@ class AMserver
                 $str = $this->AMremoveCharsAndBlanks($str, strlen($symbol['input']));
                 $result = $this->AMparseIexpr($str);
                 if ($result[0] == null) // show box in place of missing argument
-                    $result[0] = $this->createMmlNode("mo", $this->createTextNode("\u25A1"));
+                    $result[0] = $this->createMmlNode("mo", $this->createTextNode("\u{25A1}"));
                 else $this->AMremoveBrackets($result[0]);
                 $str = $result[1];
                 $this->AMremoveBrackets($node);
@@ -1336,7 +1336,7 @@ class AMserver
                                         $node->removeChild($node->firstChild()); //remove ,
                                         if (
                                             $node->firstChild()->nodeName == "mrow" and count($node->firstChild()->childNodes) == 1 and
-                                            $node->firstChild()->firstChild()->firstChild()->nodeValue == "\u2223"
+                                            $node->firstChild()->firstChild()->firstChild()->nodeValue == "\u{2223}"
                                         ) {
                                             //is columnline marker - skip it
                                             if ($i == 0) {

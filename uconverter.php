@@ -1,3 +1,0 @@
-<?php
-
-$filename = 'asciimath.php';
