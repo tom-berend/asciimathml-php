@@ -28,7 +28,8 @@
 
 <body>
 
-    <h2><a href='http://localhost/asciimathml-ts/testphp.php'>PHP</a>  <a href='http://localhost/asciimathml-ts/testts.html'>TS</a>  </h2>
+    <h2><a href='http://localhost/asciimathml-ts/testphp.php'>PHP</a> <a
+            href='http://localhost/asciimathml-ts/testts.html'>TS</a> </h2>
     <div id="test"></div>
 
     <script type='module'>
@@ -110,13 +111,17 @@
         // appnd('(a,b]={x in RR | a &lt; x &lt;= b}', 'grouping brackets don\'t have to match')
         // appnd('abc-123.45^-1.1', 'non-tokens are split into single characters, but decimal numbers are parsed with possible sign')
 
-        appnd('a')
+        // appnd('a')
+        // appnd('ab');
+        // appnd('bold(a)')
+        // appnd(' a  bold(b) c')
+        // appnd(' a  bold b c')
+        appnd('hat(a)')
+
 
         // appnd('a mspace(5)b mspace(1em)c thinspace thinspace d ')
         // appnd('i thinspace am " normal"')
 
-        // appnd(' a  bold(b) c')
-        // appnd(' a  bold b c')
 
         // appnd('bb abb b')
         // appnd('bb " bb " bb c bb(c)')

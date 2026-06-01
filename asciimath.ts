@@ -676,6 +676,7 @@ export class AMserver {
         let i;
         AMsymbols.sort(this.compareNames);
         for (i = 0; i < AMsymbols.length; i++) this.AMnames[i] = AMsymbols[i].input;
+        
     }
 
     define(oldstr: string, newstr: string) {

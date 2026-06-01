@@ -108,7 +108,7 @@ function printNiceHelper(mixed $elem, $max_level = 10, $print_nice_stack = array
     } elseif ("" === $elem) {
         $HTML .= "<font color=green>EMPTY STRING</font>";
     } else {
-        $HTML .= str_replace("\n", "<strong><font color=red>*</font></strong><br>\n", $elem);
+        // $HTML .= str_replace("\n", "<strong><font color=red>*</font></strong><br>\n", $elem);
     }
     return ($HTML);
 }
@@ -194,48 +194,53 @@ function testAMNode(): string
 function testSuite()
 {
 
-    appnd('a');
+
+    // appnd('x^2+y_1+z_12^34', 'subscripts as in TeX, but numbers are treated as a unit');
+    // appnd('sin^-1(x)', 'function names are treated as constants');
+    // appnd('d/dxf(x)=lim_(h->0)(f(x+h)-f(x))/h', 'complex subscripts are bracketed, displayed under lim');
+    // appnd(
+    //     '\\frac{d}{dx}f(x)=\\lim_{h\\to 0}\\frac{f(x+h)-f(x)}{h}',
+    //     'standard LaTeX notation is an alternative'
+    // );
+
+    // appnd(
+    //     'f(x)=sum_(n=0)^oo(f^((n))(a))/(n!)(x-a)^n',
+    //     'f^((n))(a) must be bracketed, else the numerator is only \'a\''
+    // );
+
+    // appnd(
+    //     'f(x)=\\sum_{n=0}^\\infty\\frac{f^{(n)}(a)}{n!}(x-a)^n',
+    //     'standard LaTeX produces a similar result'
+    // );
+
+    // appnd('int_0^1f(x)dx', 'subscripts must come before superscripts');
+
+    // appnd('[[a,b],[c,d]]((n),(k))', 'matrices and column vectors are simple to type');
+    // appnd('x/x={(1,if x!=0),("undefined",if x=0):}', 'piecewise defined functions are based on matrix notation');
+    // appnd('a//b', 'use //// for inline fractions');
+
+    // appnd('(a/b)/(c/d)', 'with brackets, multiple fraction work as expected');
+    // appnd('a/b/c/d', 'without brackets the parser chooses this particular expression');
+
+    // appnd('((a*b))/c', 'only one level of brackets is removed; * gives standard product');
+    // appnd('sqrt sqrt root3x', 'spaces are optional, only serve to split strings that should not match');
+    // appnd('&lt;&lt; a,b >> and {:(x,y),(u,v):}', 'angle brackets and invisible brackets');
+    // appnd('(a,b]={x in RR | a &lt; x &lt;= b}', 'grouping brackets don\'t have to match');
+    // appnd('abc-123.45^-1.1', 'non-tokens are split into single characters, but decimal numbers are parsed with possible sign');
+
+
+    // appnd('a');
+    // appnd('ab');
+    // appnd('bold(a)');
+    // appnd(' a  bold(b) c');
+    // appnd(' a  bold b c');
+    appnd('hat(a)');
+
 
     return;
+    // appnd('a mspace(5)b mspace(1em)c thinspace thinspace d ');
+    // appnd('i thinspace am " normal"');
 
-    appnd('x^2+y_1+z_12^34', 'subscripts as in TeX, but numbers are treated as a unit');
-    appnd('sin^-1(x)', 'function names are treated as constants');
-    appnd('d/dxf(x)=lim_(h->0)(f(x+h)-f(x))/h', 'complex subscripts are bracketed, displayed under lim');
-    appnd(
-        '\\frac{d}{dx}f(x)=\\lim_{h\\to 0}\\frac{f(x+h)-f(x)}{h}',
-        'standard LaTeX notation is an alternative'
-    );
-
-    appnd(
-        'f(x)=sum_(n=0)^oo(f^((n))(a))/(n!)(x-a)^n',
-        'f^((n))(a) must be bracketed, else the numerator is only \'a\''
-    );
-
-    appnd(
-        'f(x)=\\sum_{n=0}^\\infty\\frac{f^{(n)}(a)}{n!}(x-a)^n',
-        'standard LaTeX produces a similar result'
-    );
-
-    appnd('int_0^1f(x)dx', 'subscripts must come before superscripts');
-
-    appnd('[[a,b],[c,d]]((n),(k))', 'matrices and column vectors are simple to type');
-    appnd('x/x={(1,if x!=0),("undefined",if x=0):}', 'piecewise defined functions are based on matrix notation');
-    appnd('a//b', 'use //// for inline fractions');
-
-    appnd('(a/b)/(c/d)', 'with brackets, multiple fraction work as expected');
-    appnd('a/b/c/d', 'without brackets the parser chooses this particular expression');
-
-    appnd('((a*b))/c', 'only one level of brackets is removed; * gives standard product');
-    appnd('sqrt sqrt root3x', 'spaces are optional, only serve to split strings that should not match');
-    appnd('&lt;&lt; a,b >> and {:(x,y),(u,v):}', 'angle brackets and invisible brackets');
-    appnd('(a,b]={x in RR | a &lt; x &lt;= b}', 'grouping brackets don\'t have to match');
-    appnd('abc-123.45^-1.1', 'non-tokens are split into single characters, but decimal numbers are parsed with possible sign');
-
-    appnd('a mspace(5)b mspace(1em)c thinspace thinspace d ');
-    appnd('i thinspace am " normal"');
-
-    appnd(' a  bold(b) c');
-    appnd(' a  bold b c');
 
     appnd('bb abb b');
     appnd('bb " bb " bb c bb(c)');

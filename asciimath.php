@@ -196,7 +196,7 @@ class AMNode
     {
         $html = '';
 
-        $style = (strlen($this->style) > 0) ? " style = '{this.style}'" : "";
+        $style = (strlen($this->style) > 0) ? " style = '{$this->style}'" : "";
         if ($this->nodeName !== '#text' and $this->nodeName !== '') {
 
 
@@ -751,11 +751,14 @@ class AMserver
     {
         global $AMsymbols;
         usort($AMsymbols, function ($s1, $s2) {
-            global $AMsymbols;
-            for ($i = 0; $i < count($AMsymbols); $i++)
-                $this->AMnames[$i] = $AMsymbols[$i]['input'];
+            return ($s1['input'] < $s2['input']) ? -1 : 1;
         });
+        for ($i = 0; $i < count($AMsymbols); $i++)
+            $this->AMnames[$i] = $AMsymbols[$i]['input'];
+
+        // printNice($this->AMnames);
     }
+
     function define(string $oldstr, string $newstr)
     {
         global $AMsymbols, $DEFINITION;
@@ -765,7 +768,7 @@ class AMserver
 
     function AMremoveCharsAndBlanks(string $str, int $n)
     {
-        return trim(substr($str,$n));
+        return trim(substr($str, $n));
 
         // //remove n characters and any following blanks
         // if ($str[$n] == "\\" and $str[$n + 1] != "\\" and $str[$n + 1] != " ")
@@ -802,6 +805,7 @@ class AMserver
     {
         global $AMsymbols, $CONST, $INFIX, $UNARY;
 
+        // printNice($this->AMnames);
         //return maximal initial substring of str that appears in names
         //return null if there is none
         $k = 0; //new pos
@@ -813,6 +817,7 @@ class AMserver
             $st = substr($str, 0, $i); //initial substring of length $i
             $j = $k;
             $k = $this->position($this->AMnames, $st, $j);
+            // printNice("{$str}: i: {$i}, j: {$j}, k: {$k}, {$this->AMnames[$k]}");
             if ($k < count($this->AMnames) and substr($str, 0, strlen($this->AMnames[$k])) == $this->AMnames[$k]) {
                 $match = $this->AMnames[$k];
                 $mk = $k;
@@ -909,6 +914,7 @@ class AMserver
             $str = $symbol['output'] + $this->AMremoveCharsAndBlanks($str, strlen($symbol['input']));
             $symbol = $this->AMgetSymbol($str);
         }
+        // printNice($symbol, $str, );
         switch ($symbol['ttype']) {
             case $UNDEROVER:
             case $CONST:
