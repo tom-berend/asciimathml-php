@@ -1,3 +1,8 @@
+// https://www.gilesthomas.com/2025/02/mathml-fonts-on-chromium-based-browsers
+// https://fred-wang.github.io/MathFonts/mozilla_mathml_test/
+// https://github.com/fred-wang/MathFonts
+// https://github.com/stipub/stixfonts/blob/master/archive/STIXv2.0.2/OTF/STIX2Math.otf
+
 /*
 ASCIIMathML.js
 ==============

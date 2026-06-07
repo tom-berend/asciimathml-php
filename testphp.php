@@ -151,12 +151,22 @@ $html .= '<title>ASCIIMathML test suite</title>
             padding: 5px;
             text-align: center;
         }
-    </style>
-';
+
+        @font-face {
+           font-family: "STIX-Two-Math";
+           src: url("./lib/STIX2Math.otf") format("opentype");
+        }
+        math {
+            font-family: STIX-Two-Math;
+            font-size: larger;
+        }    
+    </style>';
+
+
+
 $html .= "</head>";
 $html .= "<body>\n";
-$html .= "<h2><a href='http://localhost/asciimathml-ts/testphp.php'>PHP</a>  <a href='http://localhost/asciimathml-ts/testts
-.html'>TS</a>  </h2>";
+$html .= "<h2><a href='http://localhost/asciimathml-ts/testphp.php'>PHP</a>  <a href='http://localhost/asciimathml-ts/testts'>TS</a>  </h2>";
 
 $html .= '<table>';
 foreach (['Plaintext', 'ASCIIMathML.js', 'asciimath.ts', 'comment'] as $title) {
@@ -199,6 +209,9 @@ function testAMNode(): string
 function testSuite()
 {
 
+        appnd ('cancel abc');
+    appnd('cancel (x/y)');
+
 
     // appnd('x^2+y_1+z_12^34', 'subscripts as in TeX, but numbers are treated as a unit');
     // appnd('sin^-1(x)', 'function names are treated as constants');
@@ -213,8 +226,7 @@ function testSuite()
     //     'f^((n))(a) must be bracketed, else the numerator is only \'a\''
     // );
 
-    // appnd(
-    //     'f(x)=\\sum_{n=0}^\\infty\\frac{f^{(n)}(a)}{n!}(x-a)^n',
+    // appnd( 'f(x)=\\sum_{n=0}^\\infty\\frac{f^{(n)}(a)}{n!}(x-a)^n',
     //     'standard LaTeX produces a similar result'
     // );
 
@@ -229,7 +241,7 @@ function testSuite()
 
     // appnd('((a*b))/c', 'only one level of brackets is removed; * gives standard product');
     // appnd('sqrt sqrt root3x', 'spaces are optional, only serve to split strings that should not match');
-    // appnd('&lt;&lt; a,b >> and {:(x,y),(u,v):}', 'angle brackets and invisible brackets');
+    // appnd('<< a,b >> and {:(x,y),(u,v):}', 'angle brackets and invisible brackets');
     // appnd('(a,b]={x in RR | a &lt; x &lt;= b}', 'grouping brackets don\'t have to match');
     // appnd('abc-123.45^-1.1', 'non-tokens are split into single characters, but decimal numbers are parsed with possible sign');
 
@@ -240,7 +252,7 @@ function testSuite()
     // appnd(' a  bold(b) c');
     // appnd(' a  bold b c');
     // appnd('hat(a)');
-    appnd('c thinspace d ');
+    // appnd('c thinspace d ');
     // appnd('a mspace(5)b mspace(1em)c thinspace thinspace d ');
 
 
@@ -263,8 +275,8 @@ function testSuite()
     // appnd('bold " bold " bold c bold(c)');
 
     // appnd('a color(red) b color(black) c');
-    return;
-
+    // return;
+    /*
     appnd('cancel (x/y)');
     appnd('cancel (x/y)');
     appnd('cancel (x) /y');
@@ -322,7 +334,6 @@ function testSuite()
     appnd('int (x_2) y z');
     appnd('bold (x_2) y z');
     appnd('bold (x_2) x_2 bold (x_2)');
-
     appnd('[[a,b,c,d]]');
     appnd('bold( [[a,b,c,d]] )');
     appnd('bold( [[a,b,c,d]] ) ');
@@ -332,7 +343,7 @@ function testSuite()
     appnd('(a+b)/c');
     appnd('a/(b+c)');
     appnd('a/((b+c))');
-
+    
     appnd('a^b');
     appnd('a^b+c');
     appnd('a+b^b');
@@ -340,7 +351,7 @@ function testSuite()
     appnd('a^(b+c)');
     appnd('a^((b+c))');
     appnd('(a+b)/b');
-
+    
     appnd('overset x =');
     appnd('overset x (=)');
     appnd('overset (x) =');
@@ -349,8 +360,8 @@ function testSuite()
     appnd('frac{2}{3}');
     appnd('id(red)(x)');
     appnd('color(red)(x)');
-
-
+    
+    
     appnd('{a,b,c,d}');
     appnd('(a,b,c,d)');
     appnd('[a,b,c,d]');
@@ -359,12 +370,14 @@ function testSuite()
     appnd('{[ a,b,c,d ]}');
     appnd('[[a,b]]');
     appnd('[[a,b][c,d]]');
+    
+    appnd('sum_(i=1)^n i^3=((n(n+1))/2)^2');
     appnd('[[a,b],[c,d]]');
+    
     appnd('[(a,b),(c,d)]');
     appnd('((a),(b))');
     appnd('([a],[b])');
     appnd('(  a,b )');
-
     appnd('');   // empty
     appnd(' ');
     appnd(' [, ,] ');
@@ -382,4 +395,6 @@ function testSuite()
     appnd('4 -: 2');
     appnd('a -: b');
     appnd('a divide b');
+
+*/
 }

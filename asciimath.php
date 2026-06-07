@@ -110,7 +110,6 @@ class AMNode
 
     function setAttribute(string $key, mixed $value): AMNode
     {
-        printNice($key,$value);
         $this->attributes[$key] = $value;
         return $this;
     }
@@ -198,7 +197,7 @@ class AMNode
         $html = '';
 
         $style = (strlen($this->style) > 0) ? " style = '{$this->style}'" : "";
-        printNice($this->attributes,$this->nodeName);
+        // printNice($this->attributes, $this->nodeName);
         if ($this->nodeName !== '#text' and $this->nodeName !== '') {
 
             $attributes = '';
@@ -221,7 +220,7 @@ class AMNode
         }
         // $html .= 'e';
         $html .= "</{$this->nodeName}>";
-printNice($html);
+        // printNice($html);
         return $html;
     }
 }
@@ -739,6 +738,8 @@ class AMserver
                         'output' => $AMsymbols[$i]['output'],
                         'ttype' => $AMsymbols[$i]['ttype'],
                         'acc' => $AMsymbols[$i]['acc'] ?? false,
+                        'func' => $AMsymbols[$i]['func'] ?? false,
+                        'invisible' => $AMsymbols[$i]['invisible'] ?? false,
                         'codes' => $AMsymbols[$i]['codes'] ?? false,
                     ]
                 );
@@ -911,7 +912,7 @@ class AMserver
         // }
 
         if ($symbol['ttype'] == $DEFINITION) {
-            $str = $symbol['output'] + $this->AMremoveCharsAndBlanks($str, strlen($symbol['input']));
+            $str = $symbol['output'] . $this->AMremoveCharsAndBlanks($str, strlen($symbol['input']));
             $symbol = $this->AMgetSymbol($str);
         }
         // printNice($symbol, $str, );
@@ -919,10 +920,15 @@ class AMserver
             case $UNDEROVER:
             case $CONST:
                 $str = $this->AMremoveCharsAndBlanks($str, strlen($symbol['input']));
-                return [$this->createMmlNode(
-                    $symbol['tag'],        //its a constant
-                    $this->createTextNode($symbol['output'])
-                ), $str];
+                // printNice($symbol,$str);
+                if ($symbol['tag'] === 'mspace') {
+                    $node = $this->createMmlNode($symbol['tag']);
+                    $node->setAttribute("width", $symbol['output'] . "em");
+                    return [$node, $str];
+                }else{
+                    return [$this->createMmlNode($symbol['tag'],        //its a constant
+                        $this->createTextNode($symbol['output'])), $str];
+                }
             case $LEFTBRACKET:   //read (expr+)
                 $this->AMnestingDepth++;
                 $str = $this->AMremoveCharsAndBlanks($str, strlen($symbol['input']));
@@ -934,7 +940,7 @@ class AMserver
                     $result = $this->AMparseExpr($str, true);
                 }
                 $this->AMnestingDepth--;
-                if ($symbol->invisible)
+                if ($symbol['invisible'])
                     $node = $this->createMmlNode("mrow", $result[0]);
                 else {
                     $node = $this->createMmlNode("mo", $this->createTextNode($symbol['output']));
@@ -946,14 +952,14 @@ class AMserver
                 $i = 0;
                 if ($symbol != $AMquote)
                     $str = $this->AMremoveCharsAndBlanks($str, strlen($symbol['input']));
-                if ($str[0] == "{") $i = strpos($str,"}");
+                if ($str[0] == "{") $i = strpos($str, "}");
                 else if ($str[0] == "(") $i = strpos($str, ")");
-                else if ($str[0] == "[") $i = strpos($str,"]");
-                else if ($str[0] == $AMquote['input']) $i = strpos($str, $AMquote['input'],1);
+                else if ($str[0] == "[") $i = strpos($str, "]");
+                else if ($str[0] == $AMquote['input']) $i = strpos($str, $AMquote['input'], 1);
                 else $i = 0;
                 if ($i == false) $i = strlen($str);  // a strpos failed
-                $st = substr($str, 1,$i-1);
-                printNice("str: '{$str}', st:'{$st}', i:{$i}");
+                $st = substr($str, 1, $i - 1);
+                // printNice("str: '{$str}', st:'{$st}', i:{$i}");
                 if ($symbol['input'] === 'mspace') { // special case
 
                     preg_match('/^(-?[\d\.]+)\s*(em|mu)?$/', $st, $m);
@@ -967,8 +973,8 @@ class AMserver
                     $str = $this->AMremoveCharsAndBlanks($str, $i + 1);
                     return [$node, $str];
                 }
-                printNice($st,strlen($st));
-                if (substr($st,0,1)== " ") {
+                printNice($st, strlen($st));
+                if (substr($st, 0, 1) == " ") {
                     $node = $this->createMmlNode("mspace");
                     $node->setAttribute("width", "1ex");
                     $newFrag->appendChild($node);
@@ -1372,7 +1378,8 @@ class AMserver
                 }
             }
             $str = $this->AMremoveCharsAndBlanks($str, strlen($symbol['input']));
-            if (!$symbol->invisible) {
+            printNice($symbol);
+            if (!isset($symbol['invisible'])){
                 $node = $this->createMmlNode("mo", $this->createTextNode($symbol['output']));
                 $newFrag->appendChild($node);
             }
@@ -1402,6 +1409,10 @@ class AMserver
         if ($this->displaystyle)
             $node->setAttribute("displaystyle", "true");
         $node = $this->createMmlNode("math", $node);
+                    // $node->style .= "font-family:math;";
+            // $node->setAttribute("font-family","math");
+            $node->setAttribute("display","block");
+
         if ($this->showasciiformulaonhover) {                     //fixed by djhsu so newline
             $node = $this->createMmlNode('div', $node);
             $node->setAttribute("title", preg_replace('\s+', " ", $str)); //does not show in Gecko
