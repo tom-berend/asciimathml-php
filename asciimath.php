@@ -197,7 +197,6 @@ class AMNode
         $html = '';
 
         $style = (strlen($this->style) > 0) ? " style = '{$this->style}'" : "";
-        // printNice($this->attributes, $this->nodeName);
         if ($this->nodeName !== '#text' and $this->nodeName !== '') {
 
             $attributes = '';
@@ -220,7 +219,6 @@ class AMNode
         }
         // $html .= 'e';
         $html .= "</{$this->nodeName}>";
-        // printNice($html);
         return $html;
     }
 }
@@ -677,10 +675,24 @@ class AMserver
     public $listseparator = ",";      // when decimalsign="," you can opt to use ";" as listseparator
     public $decimalsign = "->";        // if "," then when writing lists or matrices put
     public $addmathvariant = false;  // true to add mathvariant on font changes->
+    public $cancelColor = 'red';     // sets default color for cancel
+
 
     function __construct()
     {
         $this->initSymbols();
+    }
+
+    function cancelStyle(string $color): string
+    {
+        return
+            "padding-left:0.5em;
+            padding-right:0.5em;
+            background:linear-gradient(to top left,
+                    white 0,
+                    white calc(50% - 1px),
+                    {$color},
+                    white calc(50% + 1px))";
     }
 
 
@@ -756,8 +768,6 @@ class AMserver
         });
         for ($i = 0; $i < count($AMsymbols); $i++)
             $this->AMnames[$i] = $AMsymbols[$i]['input'];
-
-        // printNice($this->AMnames);
     }
 
     function define(string $oldstr, string $newstr)
@@ -925,9 +935,11 @@ class AMserver
                     $node = $this->createMmlNode($symbol['tag']);
                     $node->setAttribute("width", $symbol['output'] . "em");
                     return [$node, $str];
-                }else{
-                    return [$this->createMmlNode($symbol['tag'],        //its a constant
-                        $this->createTextNode($symbol['output'])), $str];
+                } else {
+                    return [$this->createMmlNode(
+                        $symbol['tag'],        //its a constant
+                        $this->createTextNode($symbol['output'])
+                    ), $str];
                 }
             case $LEFTBRACKET:   //read (expr+)
                 $this->AMnestingDepth++;
@@ -940,7 +952,7 @@ class AMserver
                     $result = $this->AMparseExpr($str, true);
                 }
                 $this->AMnestingDepth--;
-                if ($symbol['invisible'])
+                if ($symbol['invisible'] ?? false)
                     $node = $this->createMmlNode("mrow", $result[0]);
                 else {
                     $node = $this->createMmlNode("mo", $this->createTextNode($symbol['output']));
@@ -973,7 +985,7 @@ class AMserver
                     $str = $this->AMremoveCharsAndBlanks($str, $i + 1);
                     return [$node, $str];
                 }
-                printNice($st, strlen($st));
+                // printNice($st, strlen($st));
                 if (substr($st, 0, 1) == " ") {
                     $node = $this->createMmlNode("mspace");
                     $node->setAttribute("width", "1ex");
@@ -1004,7 +1016,7 @@ class AMserver
                         $result[0] = $this->createMmlNode("mi");
                     }
                 }
-                if ($symbol->func) { // functions hack
+                if ($symbol['func'] ?? false) { // functions hack
                     $st = $str[0];
                     if (
                         $st == "^" or $st == "_" or $st == "/" or $st == "|" or $st == $this->listseparator or
@@ -1033,7 +1045,7 @@ class AMserver
                     return [$node, $result[1]];
                 } else if ($symbol['input'] == "cancel") {   // cancel
                     $node = $this->createMmlNode($symbol['tag'], $result[0]);
-                    $node->setAttribute("class", "cancel");
+                    $node->style .= $this->cancelStyle($this->cancelColor);
                     return [$node, $result[1]];
                 } else if (isset($symbol['acc']) and $symbol['acc']) {   // accent
                     $node = $this->createMmlNode($symbol['tag'], $result[0]);
@@ -1109,6 +1121,7 @@ class AMserver
                 return [$this->createMmlNode($symbol['tag'], $newFrag), $result2[1]];
             case $INFIX:
                 $str = $this->AMremoveCharsAndBlanks($str, strlen($symbol['input']));
+                printNice("infix: {$symbol['input']}, str: '{$str}'");
                 return [$this->createMmlNode("mo", $this->createTextNode($symbol['output'])), $str];
             case $SPACE:
                 $str = $this->AMremoveCharsAndBlanks($str, strlen($symbol['input']));
@@ -1207,6 +1220,8 @@ class AMserver
     {
         global $INFIX, $UNDEROVER, $UNARYUNDEROVER, $RIGHTBRACKET, $LEFTBRACKET;
 
+        printNice("AMparseIexpr: '{$str}'");
+
         $str = $this->AMremoveCharsAndBlanks($str, 0);
         $sym1 = $this->AMgetSymbol($str);
         $result = $this->AMparseSexpr($str);
@@ -1215,7 +1230,6 @@ class AMserver
         $symbol = $this->AMgetSymbol($str);
         if ($symbol['ttype'] == $INFIX and $symbol['input'] != "/") {
             $str = $this->AMremoveCharsAndBlanks($str, strlen($symbol['input']));
-            //    if ($symbol['input'] == "/") $result = AMparseIexpr($str); else ->->->
             $result = $this->AMparseSexpr($str);
             if ($result[0] == null) // show box in place of missing argument
                 $result[0] = $this->createMmlNode("mo", $this->createTextNode("\u{25A1}"));
@@ -1223,6 +1237,7 @@ class AMserver
             $str = $result[1];
             //    if ($symbol['input'] == "/") AMremoveBrackets($node);
             $underover = ($sym1['ttype'] == $UNDEROVER or $sym1['ttype'] == $UNARYUNDEROVER);
+            printNice("AMParseIExpr switch: {$symbol['input']}, str: '{$str}'");
             if ($symbol['input'] == "_") {
                 $sym2 = $this->AMgetSymbol($str);
                 if ($sym2['input'] == "^") {
@@ -1245,7 +1260,7 @@ class AMserver
                 $node = $this->createMmlNode($symbol['tag'], $node);
                 $node->appendChild($result[0]);
             }
-            if ($sym1->func) {
+            if ($sym1['func'] ?? false) {
                 $sym2 = $this->AMgetSymbol($str);
                 if (
                     $sym2['ttype'] != $INFIX and $sym2['ttype'] != $RIGHTBRACKET and
@@ -1263,11 +1278,17 @@ class AMserver
 
     function AMparseExpr(string $str, bool $rightbracket = false) /*: [AMNode, string]*/
     {
+        printNice("AMparseExpr: '{$str}'");
         global $RIGHTBRACKET, $LEFTBRACKET, $LEFTRIGHT, $INFIX;
         // $symbol: AMSymbol, $node: AMNode, result, $i
         $newFrag = $this->createDocumentFragment();
+
+        $safety = 0;
         do {
+            if ($safety++ > 100) throw new exception('looping');
+
             $str = $this->AMremoveCharsAndBlanks($str, 0);
+            printNice("AMparseExpr: '{$str}'");
             $result = $this->AMparseIexpr($str);
             $node = $result[0];
             $str = $result[1];
@@ -1371,15 +1392,14 @@ class AMserver
                             }
                             $node = $this->createMmlNode("mtable", $table);
                             $node->setAttribute("columnlines", implode(' ', $columnlines));
-                            if ($symbol->invisible) $node->setAttribute("columnalign", "left");
+                            if ($symbol['invisible'] ?? false) $node->setAttribute("columnalign", "left");
                             $newFrag->replaceChild($node, $newFrag->firstChild());
                         }
                     }
                 }
             }
             $str = $this->AMremoveCharsAndBlanks($str, strlen($symbol['input']));
-            printNice($symbol);
-            if (!isset($symbol['invisible'])){
+            if (!isset($symbol['invisible'])) {
                 $node = $this->createMmlNode("mo", $this->createTextNode($symbol['output']));
                 $newFrag->appendChild($node);
             }
@@ -1394,7 +1414,7 @@ class AMserver
         // $str = str_replace( '&nbsp;', "",$str);
         // $str = str_replace('&gt;', ">", $str);
         // $str = str_replace('&lt;', "<",$str);
-        $frag = $this->AMparseExpr(str_replace('^', "", $str));
+        $frag = $this->AMparseExpr(trim($str));
         $node = $this->createMmlNode("mstyle", $frag[0]);
         if ($this->mathcolor != "") $node->setAttribute("mathcolor", $this->mathcolor);
         if ($this->mathfontsize != "") {
@@ -1409,9 +1429,9 @@ class AMserver
         if ($this->displaystyle)
             $node->setAttribute("displaystyle", "true");
         $node = $this->createMmlNode("math", $node);
-                    // $node->style .= "font-family:math;";
-            // $node->setAttribute("font-family","math");
-            $node->setAttribute("display","block");
+        // $node->style .= "font-family:math;";
+        // $node->setAttribute("font-family","math");
+        $node->setAttribute("display", "block");
 
         if ($this->showasciiformulaonhover) {                     //fixed by djhsu so newline
             $node = $this->createMmlNode('div', $node);

@@ -1,3 +1,7 @@
+// https://www.gilesthomas.com/2025/02/mathml-fonts-on-chromium-based-browsers
+// https://fred-wang.github.io/MathFonts/mozilla_mathml_test/
+// https://github.com/fred-wang/MathFonts
+// https://github.com/stipub/stixfonts/blob/master/archive/STIXv2.0.2/OTF/STIX2Math.otf
 /*
 ASCIIMathML.js
 ==============
@@ -604,7 +608,7 @@ export class AMserver {
             st = str.slice(n);
         for (i = 0; i < st.length && st.charCodeAt(i) <= 32; i = i + 1)
             ;
-        console.log(`str: '${str}', n: ${n}, returns '${st.slice(i)}' of ${i}`);
+        // console.log(`str: '${str}', n: ${n}, returns '${st.slice(i)}' of ${i}`)
         return st.slice(i);
     }
     position(arr, str, n) {
@@ -730,7 +734,7 @@ export class AMserver {
             str = symbol.output + this.AMremoveCharsAndBlanks(str, symbol.input.length);
             symbol = this.AMgetSymbol(str);
         }
-        console.warn('AMparseSexpr switch', symbol.ttype);
+        // console.warn('AMparseSexpr switch', symbol.ttype)
         switch (symbol.ttype) {
             case UNDEROVER:
             case CONST:
@@ -738,11 +742,11 @@ export class AMserver {
                 if (symbol.tag === 'mspace') {
                     node = this.createMmlNode(symbol.tag);
                     node.setAttribute("width", symbol.output + "em");
-                    console.warn('AMparseSexpr returns', node, str);
+                    // console.warn('AMparseSexpr returns', node, str)
                     return [node, str];
                 }
                 else {
-                    console.warn('AMparseSexpr returns', 'something', str, symbol);
+                    // console.warn('AMparseSexpr returns', 'something', str, symbol)
                     return [this.createMmlNode(symbol.tag, //its a constant
                         this.createTextNode(symbol.output)), str];
                 }
@@ -1016,7 +1020,6 @@ export class AMserver {
         symbol = this.AMgetSymbol(str);
         if (symbol.ttype == INFIX && symbol.input != "/") {
             str = this.AMremoveCharsAndBlanks(str, symbol.input.length);
-            //    if (symbol.input == "/") result = AMparseIexpr(str); else ...
             result = this.AMparseSexpr(str);
             if (result[0] == null) // show box in place of missing argument
                 result[0] = this.createMmlNode("mo", this.createTextNode("\u25A1"));
@@ -1025,6 +1028,7 @@ export class AMserver {
             str = result[1];
             //    if (symbol.input == "/") AMremoveBrackets(node);
             underover = (sym1.ttype == UNDEROVER || sym1.ttype == UNARYUNDEROVER);
+            console.warn('AMparseIexpr switch', symbol.input, str, underover);
             if (symbol.input == "_") {
                 sym2 = this.AMgetSymbol(str);
                 if (sym2.input == "^") {
@@ -1064,13 +1068,14 @@ export class AMserver {
         return [node, str];
     }
     AMparseExpr(str, rightbracket = false) {
-        console.warn('AMparseExpr', str);
+        // console.warn('AMparseExpr', str)
         var symbol, node, result, i, newFrag = this.createDocumentFragment();
         let safety = 0;
         do {
             if (safety++ > 100)
                 throw new Error('looping');
             str = this.AMremoveCharsAndBlanks(str, 0);
+            console.warn('AMparseExpr loop', str);
             result = this.AMparseIexpr(str);
             node = result[0];
             str = result[1];

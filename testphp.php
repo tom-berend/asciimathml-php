@@ -155,6 +155,7 @@ $html .= '<title>ASCIIMathML test suite</title>
         @font-face {
            font-family: "STIX-Two-Math";
            src: url("./lib/STIX2Math.otf") format("opentype");
+           font-display: block;
         }
         math {
             font-family: STIX-Two-Math;
@@ -166,7 +167,7 @@ $html .= '<title>ASCIIMathML test suite</title>
 
 $html .= "</head>";
 $html .= "<body>\n";
-$html .= "<h2><a href='http://localhost/asciimathml-ts/testphp.php'>PHP</a>  <a href='http://localhost/asciimathml-ts/testts'>TS</a>  </h2>";
+$html .= "<h2><a href='http://localhost/asciimathml-ts/testphp.php'>PHP</a>  <a href='http://localhost/asciimathml-ts/testts.html'>TS</a>  </h2>";
 
 $html .= '<table>';
 foreach (['Plaintext', 'ASCIIMathML.js', 'asciimath.ts', 'comment'] as $title) {
@@ -182,6 +183,7 @@ echo $html;
 function appnd(string $str, string $comment = '')
 {
     global $html, $am;
+    printNice("appnd: '{$str}", $comment);
     $result = $am->parseMath($str);
     $neutered = str_replace('<', '&lt;', $result);
     $html .= "<tr><td>{$str}</td
@@ -209,9 +211,8 @@ function testAMNode(): string
 function testSuite()
 {
 
-        appnd ('cancel abc');
-    appnd('cancel (x/y)');
-
+    appnd('a^2');
+    appnd('a_2');
 
     // appnd('x^2+y_1+z_12^34', 'subscripts as in TeX, but numbers are treated as a unit');
     // appnd('sin^-1(x)', 'function names are treated as constants');
