@@ -734,7 +734,6 @@ export class AMserver {
             str = symbol.output + this.AMremoveCharsAndBlanks(str, symbol.input.length);
             symbol = this.AMgetSymbol(str);
         }
-        // console.warn('AMparseSexpr switch', symbol.ttype)
         switch (symbol.ttype) {
             case UNDEROVER:
             case CONST:
@@ -742,11 +741,9 @@ export class AMserver {
                 if (symbol.tag === 'mspace') {
                     node = this.createMmlNode(symbol.tag);
                     node.setAttribute("width", symbol.output + "em");
-                    // console.warn('AMparseSexpr returns', node, str)
                     return [node, str];
                 }
                 else {
-                    // console.warn('AMparseSexpr returns', 'something', str, symbol)
                     return [this.createMmlNode(symbol.tag, //its a constant
                         this.createTextNode(symbol.output)), str];
                 }
@@ -981,6 +978,7 @@ export class AMserver {
             for (let j = 0; j < st.length; j++) {
                 didmap = false;
                 charcode = st.charCodeAt(j);
+                // console.log(codemap);
                 for (let k = 0; k < 5; k++) {
                     if (!codemap[k]) {
                         continue;
@@ -1010,7 +1008,6 @@ export class AMserver {
         }
     }
     AMparseIexpr(str) {
-        console.warn('AMparseIexpr', str);
         let symbol, sym1, sym2, node, result, underover;
         str = this.AMremoveCharsAndBlanks(str, 0);
         sym1 = this.AMgetSymbol(str);
@@ -1028,7 +1025,6 @@ export class AMserver {
             str = result[1];
             //    if (symbol.input == "/") AMremoveBrackets(node);
             underover = (sym1.ttype == UNDEROVER || sym1.ttype == UNARYUNDEROVER);
-            console.warn('AMparseIexpr switch', symbol.input, str, underover);
             if (symbol.input == "_") {
                 sym2 = this.AMgetSymbol(str);
                 if (sym2.input == "^") {
@@ -1068,14 +1064,12 @@ export class AMserver {
         return [node, str];
     }
     AMparseExpr(str, rightbracket = false) {
-        // console.warn('AMparseExpr', str)
         var symbol, node, result, i, newFrag = this.createDocumentFragment();
         let safety = 0;
         do {
             if (safety++ > 100)
                 throw new Error('looping');
             str = this.AMremoveCharsAndBlanks(str, 0);
-            console.warn('AMparseExpr loop', str);
             result = this.AMparseIexpr(str);
             node = result[0];
             str = result[1];

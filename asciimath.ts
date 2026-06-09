@@ -681,7 +681,7 @@ export class AMserver {
         let i;
         AMsymbols.sort(this.compareNames);
         for (i = 0; i < AMsymbols.length; i++) this.AMnames[i] = AMsymbols[i].input;
-        
+
     }
 
     define(oldstr: string, newstr: string) {
@@ -727,7 +727,7 @@ export class AMserver {
         let j = 0; //old pos
         let mk = -1; //match pos
         let st;
-        let tagst:string;
+        let tagst: string;
         let match = "";
         let more = true;
         for (let i = 1; i <= str.length && more; i++) {
@@ -820,7 +820,6 @@ export class AMserver {
             symbol = this.AMgetSymbol(str);
         }
 
-        // console.warn('AMparseSexpr switch', symbol.ttype)
 
         switch (symbol.ttype) {
             case UNDEROVER:
@@ -829,11 +828,9 @@ export class AMserver {
                 if (symbol.tag === 'mspace') {
                     node = this.createMmlNode(symbol.tag);
                     node.setAttribute("width", symbol.output + "em");
-                    // console.warn('AMparseSexpr returns', node, str)
 
                     return [node, str];
                 } else {
-                    // console.warn('AMparseSexpr returns', 'something', str, symbol)
                     return [this.createMmlNode(symbol.tag,        //its a constant
                         this.createTextNode(symbol.output)), str];
                 }
@@ -1034,6 +1031,7 @@ export class AMserver {
 
     // walks a node, and maps characters according to codemap
     AMmapChars(node: AMNode, variant: string, inputsym: string) {
+
         let tag = '';
         let codemap = codemaps[variant];
         if (!codemap[2] && inputsym.substring(0, 2) == 'bb') {
@@ -1055,8 +1053,11 @@ export class AMserver {
             for (let j = 0; j < st.length; j++) {
                 didmap = false;
                 charcode = st.charCodeAt(j);
+                // console.log(codemap);
                 for (let k = 0; k < 5; k++) {
-                    if (!codemap[k]) { continue; }
+                    if (!codemap[k]) {
+                        continue;
+                    }
                     map = codemapranges[k][2] || {};
                     if (map[charcode]) {
                         newst += String.fromCodePoint(map[charcode] - codemapranges[k][0] + codemap[k]);
@@ -1081,7 +1082,6 @@ export class AMserver {
     }
 
     AMparseIexpr(str: string): [AMNode, string] {
-        console.warn('AMparseIexpr', str)
 
         let symbol, sym1, sym2, node, result, underover;
         str = this.AMremoveCharsAndBlanks(str, 0);
@@ -1099,7 +1099,6 @@ export class AMserver {
             str = result[1];
             //    if (symbol.input == "/") AMremoveBrackets(node);
             underover = (sym1.ttype == UNDEROVER || sym1.ttype == UNARYUNDEROVER);
-            console.warn('AMparseIexpr switch', symbol.input, str, underover);
             if (symbol.input == "_") {
                 sym2 = this.AMgetSymbol(str);
                 if (sym2.input == "^") {
@@ -1137,7 +1136,6 @@ export class AMserver {
     }
 
     AMparseExpr(str: string, rightbracket = false): [AMNode, string] {
-        // console.warn('AMparseExpr', str)
         var symbol, node: AMNode, result, i,
             newFrag = this.createDocumentFragment();
 
@@ -1146,7 +1144,6 @@ export class AMserver {
             if (safety++ > 100) throw new Error('looping');
 
             str = this.AMremoveCharsAndBlanks(str, 0);
-            console.warn('AMparseExpr loop', str)
             result = this.AMparseIexpr(str);
             node = result[0];
             str = result[1];

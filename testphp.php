@@ -18,13 +18,14 @@ function printNice(mixed $elem, $comment = '')
     $debug = debug_backtrace();
     $HTML = '<br><b>printNice:</b> ' . $debug[0]['file'] . '(' . $debug[0]['line'] . ')';
     if (isset($debug[1]['file'])) {
-        $HTML .= '. from ' . $debug[1]['file'] . '(' . $debug[1]['line'] . ')';
+        // $HTML .= '. from ' . $debug[1]['file'] . '(' . $debug[1]['line'] . ')';
+        $HTML .= '. from ' . '(' . $debug[1]['line'] . ')';
     }
-
-    // if (isset($debug[2]['file'])) {
-    //     $HTML .= '. from ' . $debug[2]['file'] . '(' . $debug[2]['line'] . ')';
-    // }
-
+    for ($i = 2; $i < 5; $i++) {
+         if (isset($debug[$i]['file'])) {
+             $HTML .= '. from ' . '(' . $debug[$i]['line'] . ')';
+         }
+    }
     $HTML .= "<span style='color:blue;'>$comment</span> ";
     $HTML .= printNiceHelper($elem);
     echo $HTML;
@@ -136,6 +137,8 @@ $html .= '<title>ASCIIMathML test suite</title>
     <!-- the original ASCIIMathML.js for testing -->
     <script type="text/javascript" src="lib/ASCIIMathML.js"></script>
 
+    <!-- the original ASCIIMathML.js for testing -->
+
     <style type="text/css">
         table {
             font-family: Times;
@@ -165,42 +168,50 @@ $html .= '<title>ASCIIMathML test suite</title>
 
 
 
+$typescript =
+    "\n<script type='module'>
+
+        import { AMserver } from './asciimath.js';
+        let am = new AMserver()";
+
+
 $html .= "</head>";
 $html .= "<body>\n";
 $html .= "<h2><a href='http://localhost/asciimathml-ts/testphp.php'>PHP</a>  <a href='http://localhost/asciimathml-ts/testts.html'>TS</a>  </h2>";
 
-$html .= '<table>';
-foreach (['Plaintext', 'ASCIIMathML.js', 'asciimath.ts', 'comment'] as $title) {
-    $html .= "<th>$title</th>";
+$html .= "\n<table>";
+foreach (['Plaintext', 'ASCIIMathML.js', 'asciimath.ts', 'asciimath.php','comment'] as $title) {
+    $html .= "\n<th>$title</th>";
 }
 
 testSuite();
+$typescript .= "\n</script>";
+
 $html .= '</table>';
+$html .= $typescript;
+
 $html .= "</body>";
 $html .= "</html>";
+
+
 echo $html;
+$uniq = 0;
 
 function appnd(string $str, string $comment = '')
 {
-    global $html, $am;
-    printNice("appnd: '{$str}", $comment);
-    $result = $am->parseMath($str);
-    $neutered = str_replace('<', '&lt;', $result);
-    $html .= "<tr><td>{$str}</td
-    ><td>`{$str}`</td>
-    <td>{$result}</td>
-    <td style='max-width:300px;'>$neutered</td></tr>";
-}
+    global $html, $typescript, $am,$uniq;
 
-function testAMNode(): string
-{
-    $node = new AMNode('div');
-    $node->appendChild(new AMNode('p'));
-    $node->appendChild(new AMNode('span'));
-    $node->appendChild(new AMNode('#text', 'this is a test'));
-    $node2 = new AMNode('page');
-    $node2->appendChild($node);
-    return htmlentities($node2->flatten());
+    // printNice("appnd: '{$str}", $comment);
+    $uniq += 1;
+    $result = $am->parseMath($str);
+    $typescript .= "\n    document.getElementById('math$uniq').innerHTML = am.parseMath('$str');";
+    $neutered = str_replace('<', '&lt;', $result);
+    $html .= "<tr>
+    \n<td>{$str}</td>
+    \n<td>`$str`</td>
+    \n<td><span id='math$uniq'></span></td>
+    \n<td>{$result}</td>
+    \n<td style='max-width:300px;'>$neutered</td></tr>";
 }
 
 
@@ -211,8 +222,12 @@ function testAMNode(): string
 function testSuite()
 {
 
-    appnd('a^2');
-    appnd('a_2');
+    // appnd('bb abb b');
+    // appnd('hat(a)');
+    // appnd('x^2');
+    // appnd('cancel a');
+    appnd('\frac{a}{b}');
+    appnd('a/b');
 
     // appnd('x^2+y_1+z_12^34', 'subscripts as in TeX, but numbers are treated as a unit');
     // appnd('sin^-1(x)', 'function names are treated as constants');
@@ -261,19 +276,19 @@ function testSuite()
 
 
 
-    // appnd('bb abb b');
-    // appnd('bb " bb " bb c bb(c)');
-    // appnd('sf " sf " sf c sf(c)');
-    // appnd('sfit " sfit " sfit c sfit(c)');
-    // appnd('bbsf " bbsf " bbsf c bbsf(c)');
-    // appnd('bbb " bbb " bbb c bbb(c)');
-    // appnd('bbcc " bbcc " bbcc c');
-    // appnd('tt " tt " tt c tt(c) ');
-    // appnd('fr " fr " fr c fr(c) ');
-    // appnd('bbfr " bbfr " bbfr c bbfr(c)');
-    // appnd('bbit " bbit " bbit c bbit(c)');
-    // appnd('bbsfit " bbsfit " bbsfit c bbsfit(c)');
-    // appnd('bold " bold " bold c bold(c)');
+    // appnd('bb a " " bold b');
+    // appnd('bb " bb " bb c bb(c) " " bold(bb(b))');
+    // appnd('sf " sf " sf c sf(c) " " bold(sf(b))');
+    // appnd('sfit " sfit " sfit c sfit(c) " " bold(sfit(b))');
+    // appnd('bbsf " bbsf " bbsf c bbsf(c) " " bold(bbsf(b))');
+    // appnd('bbb " bbb " bbb c bbb(c) " " bold(bb(b))');
+    // appnd('bbcc " bbcc " bbcc c " " bold(bbcc(b))');
+    // appnd('tt " tt " tt c tt(c)  " " bold(tt(b))');
+    // appnd('fr " fr " fr c fr(c)  " " bold(fr(b))');
+    // appnd('bbfr " bbfr " bbfr c bbfr(c) " " bold(bbfr(b))');
+    // appnd('bbit " bbit " bbit c bbit(c) " " bold(bbit(b))');
+    // appnd('bbsfit " bbsfit " bbsfit c bbsfit(c) " " bold(bbsfit(b))');
+    // appnd('bold " bold " bold c bold(b)');
 
     // appnd('a color(red) b color(black) c');
     // return;

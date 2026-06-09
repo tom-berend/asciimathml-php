@@ -788,7 +788,6 @@ class AMserver
         // for ($i = 0; $i < strlen($st) and $st[$i] <= 32; $i = $i + 1);
 
         // $slice =substr($st,$i);
-        // printNice("str: '{$str}', n: {$n}, returns '{$slice}' of {$i}");
 
         // return trim(substr($str, $n));
     }
@@ -816,7 +815,6 @@ class AMserver
     {
         global $AMsymbols, $CONST, $INFIX, $UNARY;
 
-        // printNice($this->AMnames);
         //return maximal initial substring of str that appears in names
         //return null if there is none
         $k = 0; //new pos
@@ -828,7 +826,6 @@ class AMserver
             $st = substr($str, 0, $i); //initial substring of length $i
             $j = $k;
             $k = $this->position($this->AMnames, $st, $j);
-            // printNice("{$str}: i: {$i}, j: {$j}, k: {$k}, {$this->AMnames[$k]}");
             if ($k < count($this->AMnames) and substr($str, 0, strlen($this->AMnames[$k])) == $this->AMnames[$k]) {
                 $match = $this->AMnames[$k];
                 $mk = $k;
@@ -925,12 +922,10 @@ class AMserver
             $str = $symbol['output'] . $this->AMremoveCharsAndBlanks($str, strlen($symbol['input']));
             $symbol = $this->AMgetSymbol($str);
         }
-        // printNice($symbol, $str, );
         switch ($symbol['ttype']) {
             case $UNDEROVER:
             case $CONST:
                 $str = $this->AMremoveCharsAndBlanks($str, strlen($symbol['input']));
-                // printNice($symbol,$str);
                 if ($symbol['tag'] === 'mspace') {
                     $node = $this->createMmlNode($symbol['tag']);
                     $node->setAttribute("width", $symbol['output'] . "em");
@@ -971,7 +966,6 @@ class AMserver
                 else $i = 0;
                 if ($i == false) $i = strlen($str);  // a strpos failed
                 $st = substr($str, 1, $i - 1);
-                // printNice("str: '{$str}', st:'{$st}', i:{$i}");
                 if ($symbol['input'] === 'mspace') { // special case
 
                     preg_match('/^(-?[\d\.]+)\s*(em|mu)?$/', $st, $m);
@@ -985,7 +979,6 @@ class AMserver
                     $str = $this->AMremoveCharsAndBlanks($str, $i + 1);
                     return [$node, $str];
                 }
-                // printNice($st, strlen($st));
                 if (substr($st, 0, 1) == " ") {
                     $node = $this->createMmlNode("mspace");
                     $node->setAttribute("width", "1ex");
@@ -1121,7 +1114,6 @@ class AMserver
                 return [$this->createMmlNode($symbol['tag'], $newFrag), $result2[1]];
             case $INFIX:
                 $str = $this->AMremoveCharsAndBlanks($str, strlen($symbol['input']));
-                printNice("infix: {$symbol['input']}, str: '{$str}'");
                 return [$this->createMmlNode("mo", $this->createTextNode($symbol['output'])), $str];
             case $SPACE:
                 $str = $this->AMremoveCharsAndBlanks($str, strlen($symbol['input']));
@@ -1170,7 +1162,8 @@ class AMserver
         global $codemaps, $codemapranges;
         $tag = '';
         $codemap = $codemaps[$variant];
-        if (!$codemap[2] and substr($inputsym, 0, 2) == 'bb') {
+        // printNice($codemap);
+        if (isset($codemap[2]) and !$codemap[2] and substr($inputsym, 0, 2) == 'bb') {
             // bold but variant doesn't have symbol; use codepoint from bb codemap instead
             $codemap[2] = $codemaps['bold'][2];
         }
@@ -1186,13 +1179,14 @@ class AMserver
             $newst = "";
             for ($j = 0; $j < strlen($st); $j++) {
                 $didmap = false;
-                $charcode = $st[$j];
+                $charcode = mb_ord($st[$j]);
+                // printNice($codemap);
                 for ($k = 0; $k < 5; $k++) {
-                    if (!$codemap[$k]) {
+                    if (!isset($codemap[$k])) {
                         continue;
                     }
-                    $map = $codemapranges[$k][2]; // or {};
-                    if ($map[$charcode]) {
+                    $map = isset($codemapranges[$k][2])?$codemapranges[$k][2]: new ArrayObject; // or {};
+                    if (isset($map[$charcode])) {
                         // $newst .= String->fromCodePoint(map[charcode] - codemapranges[k][0] + codemap[k]);
                         $newst .= mb_chr($map[$charcode] - $codemapranges[$k][0] + $codemap[$k], 'UTF-8');
                         $didmap = true;
@@ -1220,7 +1214,6 @@ class AMserver
     {
         global $INFIX, $UNDEROVER, $UNARYUNDEROVER, $RIGHTBRACKET, $LEFTBRACKET;
 
-        printNice("AMparseIexpr: '{$str}'");
 
         $str = $this->AMremoveCharsAndBlanks($str, 0);
         $sym1 = $this->AMgetSymbol($str);
@@ -1237,7 +1230,6 @@ class AMserver
             $str = $result[1];
             //    if ($symbol['input'] == "/") AMremoveBrackets($node);
             $underover = ($sym1['ttype'] == $UNDEROVER or $sym1['ttype'] == $UNARYUNDEROVER);
-            printNice("AMParseIExpr switch: {$symbol['input']}, str: '{$str}'");
             if ($symbol['input'] == "_") {
                 $sym2 = $this->AMgetSymbol($str);
                 if ($sym2['input'] == "^") {
@@ -1278,7 +1270,6 @@ class AMserver
 
     function AMparseExpr(string $str, bool $rightbracket = false) /*: [AMNode, string]*/
     {
-        printNice("AMparseExpr: '{$str}'");
         global $RIGHTBRACKET, $LEFTBRACKET, $LEFTRIGHT, $INFIX;
         // $symbol: AMSymbol, $node: AMNode, result, $i
         $newFrag = $this->createDocumentFragment();
@@ -1288,7 +1279,6 @@ class AMserver
             if ($safety++ > 100) throw new exception('looping');
 
             $str = $this->AMremoveCharsAndBlanks($str, 0);
-            printNice("AMparseExpr: '{$str}'");
             $result = $this->AMparseIexpr($str);
             $node = $result[0];
             $str = $result[1];
