@@ -11,7 +11,7 @@
             "type": "chrome",
             "request": "launch",
             "name": "Launch Chrome against localhost",
-            "url": "http://localhost/asciimathml-ts/asciimathTest.html",
+            "url": "http://localhost/asciimathml-ts/testts.html",
             "webRoot": "${workspaceFolder}",
             "outFiles": ["${workspaceFolder}/build/**/*.js"]
         }

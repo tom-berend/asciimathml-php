@@ -135,7 +135,7 @@ $html .= '<title>ASCIIMathML test suite</title>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 
     <!-- the original ASCIIMathML.js for testing -->
-    <script type="text/javascript" src="lib/ASCIIMathML.js"></script>
+    <script type="text/javascript" src="lib/ASCIIMathML.171.js"></script>
 
     <!-- the original ASCIIMathML.js for testing -->
 
@@ -177,7 +177,6 @@ $typescript =
 
 $html .= "</head>";
 $html .= "<body>\n";
-$html .= "<h2><a href='http://localhost/asciimathml-ts/testphp.php'>PHP</a>  <a href='http://localhost/asciimathml-ts/testts.html'>TS</a>  </h2>";
 
 $html .= "\n<table>";
 foreach (['Plaintext', 'ASCIIMathML.js', 'asciimath.ts', 'asciimath.php','comment'] as $title) {
@@ -205,13 +204,13 @@ function appnd(string $str, string $comment = '')
     $uniq += 1;
     $result = $am->parseMath($str);
     $typescript .= "\n    document.getElementById('math$uniq').innerHTML = am.parseMath('$str');";
-    $neutered = str_replace('<', '&lt;', $result);
+    // $neutered = str_replace('<', '&lt;', $result);
     $html .= "<tr>
     \n<td>{$str}</td>
     \n<td>`$str`</td>
     \n<td><span id='math$uniq'></span></td>
     \n<td>{$result}</td>
-    \n<td style='max-width:300px;'>$neutered</td></tr>";
+    \n<td style='max-width:300px;'>$comment</td></tr>";
 }
 
 
@@ -222,6 +221,14 @@ function appnd(string $str, string $comment = '')
 function testSuite()
 {
 
+
+appnd('[[a,b]]');
+appnd('{[(1,2),(3,4)],[(1,2),(3,4)]}', 'should NOT be a column vector');
+appnd('{((1,2),(3,4)),((1,2),(3,4))}', 'like above');
+appnd('[((1,2),(3,4)),((1,2),(3,4))]', 'like above');
+appnd ('[( [(1,2),(3,4)] , [(1,2),(3,4)] ) , ( [(1,2),(3,4)] , [(1,2),(3,4)] )]', 'should be a matrix or matrices');
+
+/*
     // appnd('bb abb b');
     // appnd('hat(a)');
     // appnd('x^2');
@@ -229,37 +236,37 @@ function testSuite()
     appnd('\frac{a}{b}');
     appnd('a/b');
 
-    // appnd('x^2+y_1+z_12^34', 'subscripts as in TeX, but numbers are treated as a unit');
-    // appnd('sin^-1(x)', 'function names are treated as constants');
-    // appnd('d/dxf(x)=lim_(h->0)(f(x+h)-f(x))/h', 'complex subscripts are bracketed, displayed under lim');
-    // appnd(
-    //     '\\frac{d}{dx}f(x)=\\lim_{h\\to 0}\\frac{f(x+h)-f(x)}{h}',
-    //     'standard LaTeX notation is an alternative'
-    // );
+    appnd('x^2+y_1+z_12^34', 'subscripts as in TeX, but numbers are treated as a unit');
+    appnd('sin^-1(x)', 'function names are treated as constants');
+    appnd('d/dxf(x)=lim_(h->0)(f(x+h)-f(x))/h', 'complex subscripts are bracketed, displayed under lim');
+    appnd(
+        '\\frac{d}{dx}f(x)=\\lim_{h\\to 0}\\frac{f(x+h)-f(x)}{h}',
+        'standard LaTeX notation is an alternative'
+    );
 
-    // appnd(
-    //     'f(x)=sum_(n=0)^oo(f^((n))(a))/(n!)(x-a)^n',
-    //     'f^((n))(a) must be bracketed, else the numerator is only \'a\''
-    // );
+    appnd(
+        'f(x)=sum_(n=0)^oo(f^((n))(a))/(n!)(x-a)^n',
+        'f^((n))(a) must be bracketed, else the numerator is only \'a\''
+    );
 
-    // appnd( 'f(x)=\\sum_{n=0}^\\infty\\frac{f^{(n)}(a)}{n!}(x-a)^n',
-    //     'standard LaTeX produces a similar result'
-    // );
+    appnd( 'f(x)=\\sum_{n=0}^\\infty\\frac{f^{(n)}(a)}{n!}(x-a)^n',
+        'standard LaTeX produces a similar result'
+    );
 
-    // appnd('int_0^1f(x)dx', 'subscripts must come before superscripts');
+    appnd('int_0^1f(x)dx', 'subscripts must come before superscripts');
 
-    // appnd('[[a,b],[c,d]]((n),(k))', 'matrices and column vectors are simple to type');
-    // appnd('x/x={(1,if x!=0),("undefined",if x=0):}', 'piecewise defined functions are based on matrix notation');
-    // appnd('a//b', 'use //// for inline fractions');
+    appnd('[[a,b],[c,d]]((n),(k))', 'matrices and column vectors are simple to type');
+    appnd('x/x={(1,if x!=0),("undefined",if x=0):}', 'piecewise defined functions are based on matrix notation');
+    appnd('a//b', 'use //// for inline fractions');
 
-    // appnd('(a/b)/(c/d)', 'with brackets, multiple fraction work as expected');
-    // appnd('a/b/c/d', 'without brackets the parser chooses this particular expression');
+    appnd('(a/b)/(c/d)', 'with brackets, multiple fraction work as expected');
+    appnd('a/b/c/d', 'without brackets the parser chooses this particular expression');
 
-    // appnd('((a*b))/c', 'only one level of brackets is removed; * gives standard product');
-    // appnd('sqrt sqrt root3x', 'spaces are optional, only serve to split strings that should not match');
-    // appnd('<< a,b >> and {:(x,y),(u,v):}', 'angle brackets and invisible brackets');
-    // appnd('(a,b]={x in RR | a &lt; x &lt;= b}', 'grouping brackets don\'t have to match');
-    // appnd('abc-123.45^-1.1', 'non-tokens are split into single characters, but decimal numbers are parsed with possible sign');
+    appnd('((a*b))/c', 'only one level of brackets is removed; * gives standard product');
+    appnd('sqrt sqrt root3x', 'spaces are optional, only serve to split strings that should not match');
+    appnd('<< a,b >> and {:(x,y),(u,v):}', 'angle brackets and invisible brackets');
+    appnd('(a,b]={x in RR | a &lt; x &lt;= b}', 'grouping brackets don\'t have to match');
+    appnd('abc-123.45^-1.1', 'non-tokens are split into single characters, but decimal numbers are parsed with possible sign');
 
 
     // appnd('a');
@@ -292,7 +299,6 @@ function testSuite()
 
     // appnd('a color(red) b color(black) c');
     // return;
-    /*
     appnd('cancel (x/y)');
     appnd('cancel (x/y)');
     appnd('cancel (x) /y');
@@ -302,7 +308,7 @@ function testSuite()
     appnd('(f^{[n]})');
     appnd('"abc"');
     appnd('a b c, a,b,c');
-
+    
     appnd('"abc"');
     appnd('a b c, a,b,c');
     appnd('(a)');
@@ -315,7 +321,7 @@ function testSuite()
     appnd('a NN alpha ZZ');
     appnd('a + b - c * d xx e');
     appnd('-200-100 - 50  -a-b');
-
+    
     appnd('"abc 01239"');
     appnd('"abc 01239 $%*"');
     appnd('bold ("abc 01239 $%*")');
@@ -324,12 +330,13 @@ function testSuite()
     appnd('italic "$%* abc 01239 $%*"');
     appnd('bold italic ("abc 01239 $%*")');
     appnd('bold italic "$%* abc 01239 $%*"');
-
+    
     appnd('bold abc');
     appnd('bold(abc)');
-    // appnd(`bold(abc)`)
-
-    appnd('abc 01239 $%*"');
+    
+    /*
+    appnd('$%*');
+    appnd('abc 01239 $%*');
     appnd('bold "abc 01239 $%*"');
     appnd('bold bold "abc 01239 $%*"');
     appnd('tan x');
@@ -340,8 +347,8 @@ function testSuite()
     appnd('hat(x))');
     appnd('hat(x) hat(x)');
     appnd('bold hat (x)');
-    appnd('bold abs (x)');
     appnd('sqrt log(x)');
+    appnd('bold abs (x)');
     appnd('bold sqrt log(x)');
     appnd('bold (x_2)');
     appnd('bold x_2');
@@ -377,7 +384,6 @@ function testSuite()
     appnd('id(red)(x)');
     appnd('color(red)(x)');
     
-    
     appnd('{a,b,c,d}');
     appnd('(a,b,c,d)');
     appnd('[a,b,c,d]');
@@ -386,7 +392,8 @@ function testSuite()
     appnd('{[ a,b,c,d ]}');
     appnd('[[a,b]]');
     appnd('[[a,b][c,d]]');
-    
+    */
+    /*
     appnd('sum_(i=1)^n i^3=((n(n+1))/2)^2');
     appnd('[[a,b],[c,d]]');
     
@@ -411,6 +418,7 @@ function testSuite()
     appnd('4 -: 2');
     appnd('a -: b');
     appnd('a divide b');
-
-*/
-}
+    
+    */
+    // appnd('a"');
+    }

@@ -17,6 +17,7 @@ export declare class AMNode {
     get tagName(): string;
     get nextSibling(): AMNode | null;
     hasChildNodes(): boolean;
+    replaceChildren(x: AMNode): void;
     replaceChild(newChild: AMNode, oldChild: AMNode): AMNode;
     removeChild(node: AMNode): AMNode;
     /** turn a tree of AMNodes into an HTML string */
@@ -73,6 +74,10 @@ export declare class AMserver {
     AMmapChars(node: AMNode, variant: string, inputsym: string): void;
     AMparseIexpr(str: string): [AMNode, string];
     AMparseExpr(str: string, rightbracket?: boolean): [AMNode, string];
+    detectMatrix(newFrag: AMNode, endsymbol: string): {
+        isMatrix: boolean;
+        rows: AMNode[][][];
+    };
     parseMath(str: string): string;
 }
 export {};
