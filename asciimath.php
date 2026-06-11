@@ -152,6 +152,13 @@ class AMNode
         return count($this->childNodes) > 0;
     }
 
+
+    function replaceChildren(AMNode $x): void
+    {      // only ever one parameter
+        $this->childNodes = [$x];
+        $this->children = ($x->nodeName !== '#text') ? [$x] : [];
+    }
+
     function replaceChild(AMnode $newChild, AMNode $oldChild): AMNode
     {
         for ($i = 0; $i < count($this->childNodes); $i++) {
@@ -1162,7 +1169,6 @@ class AMserver
         global $codemaps, $codemapranges;
         $tag = '';
         $codemap = $codemaps[$variant];
-        // printNice($codemap);
         if (isset($codemap[2]) and !$codemap[2] and substr($inputsym, 0, 2) == 'bb') {
             // bold but variant doesn't have symbol; use codepoint from bb codemap instead
             $codemap[2] = $codemaps['bold'][2];
@@ -1180,12 +1186,11 @@ class AMserver
             for ($j = 0; $j < strlen($st); $j++) {
                 $didmap = false;
                 $charcode = mb_ord($st[$j]);
-                // printNice($codemap);
                 for ($k = 0; $k < 5; $k++) {
                     if (!isset($codemap[$k])) {
                         continue;
                     }
-                    $map = isset($codemapranges[$k][2])?$codemapranges[$k][2]: new ArrayObject; // or {};
+                    $map = isset($codemapranges[$k][2]) ? $codemapranges[$k][2] : new ArrayObject; // or {};
                     if (isset($map[$charcode])) {
                         // $newst .= String->fromCodePoint(map[charcode] - codemapranges[k][0] + codemap[k]);
                         $newst .= mb_chr($map[$charcode] - $codemapranges[$k][0] + $codemap[$k], 'UTF-8');
@@ -1299,95 +1304,49 @@ class AMserver
         } while (($symbol['ttype'] != $RIGHTBRACKET and
             ($symbol['ttype'] != $LEFTRIGHT or $rightbracket)
             or $this->AMnestingDepth == 0) and $symbol != null and $symbol['output'] != "");
+
         if ($symbol['ttype'] == $RIGHTBRACKET or $symbol['ttype'] == $LEFTRIGHT) {
-            //    if ($this->AMnestingDepth > 0) $this->AMnestingDepth--;
-            $len = count($newFrag->childNodes);
-            if (
-                $len > 0 and $newFrag->childNodes[$len - 1]->nodeName == "mrow"
-                and $newFrag->childNodes[$len - 1]->lastChild()
-                and $newFrag->childNodes[$len - 1]->lastChild()->firstChild()
-            ) { //matrix
-                //removed to allow row vectors: //and len>1 and
-                //newFrag->childNodes[len-2]->nodeName == "mo" and
-                //newFrag->childNodes[len-2]->firstChild()->nodeValue == ","
-                $right = $newFrag->childNodes[$len - 1]->lastChild()->firstChild()->nodeValue;
-                if ($right == ")" or $right == "]") {
-                    $left = $newFrag->childNodes[$len - 1]->firstChild()->firstChild()->nodeValue;
-                    if (
-                        $left == "(" and $right == ")" and $symbol['output'] != "}" or
-                        $left == "[" and $right == "]"
-                    ) {
-                        $pos = []; // positions of commas
-                        $matrix = true;
-                        $m = count($newFrag->childNodes);
-                        for ($i = 0; $matrix and $i < $m; $i = $i + 2) {
-                            $pos[$i] = [];
-                            $node = $newFrag->childNodes[$i];
-                            if ($matrix) $matrix = $node->nodeName == "mrow" and
-                                ($i == $m - 1 or $node->nextSibling()->nodeName == "mo" and
-                                    $node->nextSibling()->firstChild()->nodeValue == $this->listseparator) and
-                                $node->firstChild()->firstChild() !== null and
-                                $node->firstChild()->firstChild()->nodeValue == $left and
-                                $node->lastChild()->firstChild() !== null and
-                                $node->lastChild()->firstChild()->nodeValue == $right;
-                            if ($matrix)
-                                for ($j = 0; $j < count($node->childNodes); $j++)
-                                    if ($node->childNodes[$j]->firstChild()->nodeValue == $this->listseparator)
-                                        $pos[$i][count($pos[$i])] = $j;
-                            if ($matrix and $i > 1) $matrix = count($pos[$i]) == count($pos[$i - 2]);
-                        }
-                        $matrix = $matrix and (count($pos) > 1 or count($pos[0]) > 0);
-                        $columnlines = [];
-                        if ($matrix) {
-                            // $row: AMNode, $frag: AMNode, n, k,
-                            $table = $this->createDocumentFragment();
-                            for ($i = 0; $i < $m; $i = $i + 2) {
-                                $row = $this->createDocumentFragment();
-                                $frag = $this->createDocumentFragment();
-                                $node = $newFrag->firstChild(); // <mrow>(-,-,->->->,-,-)</mrow>
-                                $n = count($node->childNodes);
-                                $k = 0;
-                                $node->removeChild($node->firstChild()); //remove (
-                                for ($j = 1; $j < $n - 1; $j++) {
-                                    if (isset($pos[$i][$k]) and $j == $pos[$i][$k]) {
-                                        $node->removeChild($node->firstChild()); //remove ,
-                                        if (
-                                            $node->firstChild()->nodeName == "mrow" and count($node->firstChild()->childNodes) == 1 and
-                                            $node->firstChild()->firstChild()->firstChild()->nodeValue == "\u{2223}"
-                                        ) {
-                                            //is columnline marker - skip it
-                                            if ($i == 0) {
-                                                array_push($columnlines, "solid");
-                                            }
-                                            $node->removeChild($node->firstChild()); //remove mrow
-                                            $node->removeChild($node->firstChild()); //remove ,
-                                            $j .= 2;
-                                            $k++;
-                                        } else if ($i == 0) {
-                                            array_push($columnlines, "none");
-                                        }
-                                        $row->appendChild($this->createMmlNode("mtd", $frag));
-                                        $k++;
-                                    } else $frag->appendChild($node->firstChild());
-                                }
-                                $row->appendChild($this->createMmlNode("mtd", $frag));
-                                if ($i == 0) {
-                                    array_push($columnlines, "none");
-                                }
-                                if (count($newFrag->childNodes) > 2) {
-                                    $newFrag->removeChild($newFrag->firstChild()); //remove <mrow>)</mrow>
-                                    $newFrag->removeChild($newFrag->firstChild()); //remove <mo>,</mo>
-                                }
-                                $table->appendChild($this->createMmlNode("mtr", $row));
+
+            $res = $this->detectMatrix($newFrag, $symbol['output']);
+
+            if ($res['isMatrix']) {
+                $columnlines = [];
+                $table = $this->createMmlNode('mtable');
+                for ($r = 0; $r < count($res['rows']); $r++) {
+                    $row = $this->createMmlNode('mtr');
+                    for ($c = 0; $c < count($res['rows'][$r]); $c++) {
+                        if (
+                            count($res['rows'][$r][$c]) == 1 and
+                            $res['rows'][$r][$c][0]->nodeName == "mrow" and
+                            count($res['rows'][$r][$c][0]->childNodes) == 1 and
+                            $res['rows'][$r][$c][0]->firstChild->firstChild->nodeValue == "\u2223"
+                        ) {
+                            // found columnline marker
+                            if ($r == 0) {
+                                array_pop($columnlines);
+                                array_push($columnlines, "solid");
                             }
-                            $node = $this->createMmlNode("mtable", $table);
-                            $node->setAttribute("columnlines", implode(' ', $columnlines));
-                            if ($symbol['invisible'] ?? false) $node->setAttribute("columnalign", "left");
-                            $newFrag->replaceChild($node, $newFrag->firstChild());
+                        } else {
+                            $cell = $this->createMmlNode('mtd');
+                            for ($i = 0; $i < count($res['rows'][$r][$c]); $i++) {
+                                $cell->appendChild($res['rows'][$r][$c][$i]);
+                            }
+                            $row->appendChild($cell);
+                            if ($r == 0 and $c < count($res['rows'][$r]) - 1) {
+                                array_push($columnlines, "none");
+                            }
                         }
                     }
+                    $table->appendChild($row);
                 }
+                $table->setAttribute("columnlines", implode(' ', $columnlines));
+                if (isset($symbol['invisible']) and $symbol['invisible']) {
+                    $table->setAttribute("columnalign", "left");
+                }
+                $newFrag->replaceChildren($table);
             }
+
+
             $str = $this->AMremoveCharsAndBlanks($str, strlen($symbol['input']));
             if (!isset($symbol['invisible'])) {
                 $node = $this->createMmlNode("mo", $this->createTextNode($symbol['output']));
@@ -1396,6 +1355,126 @@ class AMserver
         }
         return [$newFrag, $str];
     }
+
+
+
+    function detectMatrix(AMNode $newFrag, string $endsymbol): array
+    {
+        $BRACKET_PAIRS = ['(' => ')', '[' => ']'];
+
+        $children = $newFrag->childNodes;
+        if (count($children) === 0) return ['isMatrix' => false, 'rows' => []];
+
+        // Split children into segments divided by top-level comma <mo> nodes.
+        // Valid shape: [mrow, mo(","), mrow, mo(","), mrow, ...]
+        $rows = [];
+        $expecting = 'mrow'; // alternates between 'mrow' and 'comma'
+
+        foreach ($children as $node) {
+            if ($expecting === 'mrow') {
+                if ($node->nodeName !== 'mrow') {
+                    return ['isMatrix' => false, 'rows' => []];
+                }
+                array_push($rows, $node);
+                $expecting = 'comma';
+            } else {
+                // Must be a top-level comma separator: <mo>,</mo>
+
+                if (
+                    $node->nodeName !== 'mo' or
+                    $node->firstChild()->nodeValue !== $this->listseparator
+                ) {
+                    return ['isMatrix' => false, 'rows' => []];
+                }
+                $expecting = 'mrow';
+            }
+        }
+
+        // Must end on a row, not a dangling comma
+        if ($expecting !== 'comma') return ['isMatrix' => false, 'rows' => []];
+
+        if (count($rows) < 1) return ['isMatrix' => false, 'rows' => []];
+
+        // Inspect each mrow: check opening bracket, closing bracket, and element count
+        $expectedOpen = null;
+        $expectedClose = null;
+        $expectedCount = null;
+
+        $rowsout = [];
+        foreach ($rows as $row) {
+            $cells = $row->childNodes;
+            if (count($cells) < 2) return ['isMatrix' => false, 'rows' => []];
+
+            // First child must be an <mo> with a recognized opening bracket
+            $firstNode = $cells[0];
+
+            if ($firstNode->nodeName !== 'mo') {
+                return ['isMatrix' => false, 'rows' => []];
+            }
+            $openBracket = $firstNode->firstChild()->nodeValue;
+            if (!array_key_exists($openBracket, $BRACKET_PAIRS)) {
+                return ['isMatrix' => false, 'rows' => []];
+            }
+            if ($openBracket == '(' and $endsymbol == '}') {
+                // special treatment for set of ordered ntuples
+                return ['isMatrix' => false, 'rows' => []];
+            }
+
+            // Last child must be the matching closing bracket
+            $lastNode = $cells[count($cells) - 1];
+            if ($lastNode->nodeName !== 'mo') {
+                return ['isMatrix' => false, 'rows' => []];
+            }
+            $closeBracket = $lastNode->firstChild()->nodeValue;
+            if ($closeBracket !== $BRACKET_PAIRS[$openBracket]) {
+                return ['isMatrix' => false, 'rows' => []];
+            }
+
+            // Count comma-separated elements between the brackets
+            // and collect cells for return
+            // (commas as direct <mo> children of this mrow are separators)
+            $inner = array_slice($cells,1, -1);
+            $elementCount = 1;
+            $cellsout = [];
+            $curcell = [];
+            foreach ($inner as $cell) {
+                if (
+                    $cell->nodeName === 'mo' and
+                    $cell->firstChild()->nodeValue === $this->listseparator
+                ) {
+                    $elementCount++;
+                    array_push($cellsout, $curcell);
+                    $curcell = [];
+                } else {
+                    array_push($curcell, $cell);
+                }
+            }
+            array_push($cellsout ,$curcell);
+
+            // if 1 element inside braces and it's mtable, it's seeing a matrix, not a row
+            // if 1 element and 1 row, it's just double-parens
+            if ($elementCount == 1 and count($cellsout[0])> 0 and ($cellsout[0][0] -> nodeName == 'mtable' or count($rows) == 1)) {
+                return ['isMatrix' => false, 'rows' => []];
+            }
+            array_push($rowsout,$cellsout);
+
+            // Check consistency across rows
+            if ($expectedOpen === null) {
+                $expectedOpen = $openBracket;
+                $expectedClose = $closeBracket;
+                $expectedCount = $elementCount;
+            } else {
+                if ($openBracket !==  $expectedOpen) {return   ['isMatrix' => false, 'rows' => []];}
+                if ($closeBracket !== $expectedClose){ return ['isMatrix' => false, 'rows' => []];}
+                if ($elementCount !== $expectedCount){ return ['isMatrix' => false, 'rows' => []];}
+            }
+        }
+
+        return ['isMatrix' => true, 'rows' => $rowsout];
+    }
+
+
+
 
     function parseMath(string $str): string
     {

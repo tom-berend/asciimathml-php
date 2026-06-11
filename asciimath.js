@@ -1102,6 +1102,7 @@ export class AMserver {
         if (symbol.ttype == RIGHTBRACKET || symbol.ttype == LEFTRIGHT) {
             //    if (AMnestingDepth > 0) AMnestingDepth--;
             let res = this.detectMatrix(newFrag, symbol.output);
+            console.log(res);
             if (res.isMatrix) {
                 let r, c, row;
                 let columnlines = [];
@@ -1186,7 +1187,6 @@ export class AMserver {
         const rowsout = [];
         for (const row of rows) {
             const cells = Array.from(row.childNodes);
-            // cells is an array of <mo> and <mi>  with an extra <mo>
             if (cells.length < 2)
                 return { isMatrix: false, rows: [] };
             // First child must be an <mo> with a recognized opening bracket

@@ -67,7 +67,13 @@ function printNiceHelper(mixed $elem, $max_level = 10, $print_nice_stack = array
         return ($HTML);
     }
 
-    if (is_array($elem) || is_object($elem)) {
+    if (is_object($elem)) {
+        //$HTML .= htmlentities($elem).'<br>';
+        $HTML .= '<b>object ' .get_class($elem).' '.$elem->nodeName.' '.$elem->firstChild()->nodeValue.'</b>' ; //strval($elem);
+        return ($HTML);
+    }
+
+    if (is_array($elem) or is_object($elem)) {
         if (in_array($elem, $print_nice_stack, true)) {
             $HTML .= "<hr /><h1>function {$backtrace[1]['function']}() (line:{$backtrace[1]['line']})</h1>";
             return ($HTML);
