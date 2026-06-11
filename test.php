@@ -22,9 +22,9 @@ function printNice(mixed $elem, $comment = '')
         $HTML .= '. from ' . '(' . $debug[1]['line'] . ')';
     }
     for ($i = 2; $i < 5; $i++) {
-         if (isset($debug[$i]['file'])) {
-             $HTML .= '. from ' . '(' . $debug[$i]['line'] . ')';
-         }
+        if (isset($debug[$i]['file'])) {
+            $HTML .= '. from ' . '(' . $debug[$i]['line'] . ')';
+        }
     }
     $HTML .= "<span style='color:blue;'>$comment</span> ";
     $HTML .= printNiceHelper($elem);
@@ -69,7 +69,7 @@ function printNiceHelper(mixed $elem, $max_level = 10, $print_nice_stack = array
 
     if (is_object($elem)) {
         //$HTML .= htmlentities($elem).'<br>';
-        $HTML .= '<b>object ' .get_class($elem).' '.$elem->nodeName.' '.$elem->firstChild()->nodeValue.'</b>' ; //strval($elem);
+        $HTML .= '<b>object ' . get_class($elem) . ' ' . $elem->nodeName . ' ' . $elem->firstChild()->nodeValue . '</b>'; //strval($elem);
         return ($HTML);
     }
 
@@ -141,7 +141,7 @@ $html .= '<title>ASCIIMathML test suite</title>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 
     <!-- the original ASCIIMathML.js for testing -->
-    <script type="text/javascript" src="lib/ASCIIMathML.171.js"></script>
+    <script type="text/javascript" src="lib/ASCIIMathML.js"></script>
 
     <!-- the original ASCIIMathML.js for testing -->
 
@@ -185,7 +185,7 @@ $html .= "</head>";
 $html .= "<body>\n";
 
 $html .= "\n<table>";
-foreach (['Plaintext', 'ASCIIMathML.js', 'asciimath.ts', 'asciimath.php','comment'] as $title) {
+foreach (['Plaintext', 'ASCIIMathML.js', 'asciimath.ts', 'asciimath.php', 'comment'] as $title) {
     $html .= "\n<th>$title</th>";
 }
 
@@ -204,12 +204,13 @@ $uniq = 0;
 
 function appnd(string $str, string $comment = '')
 {
-    global $html, $typescript, $am,$uniq;
+    global $html, $typescript, $am, $uniq;
 
     // printNice("appnd: '{$str}", $comment);
     $uniq += 1;
     $result = $am->parseMath($str);
-    $typescript .= "\n    document.getElementById('math$uniq').innerHTML = am.parseMath('$str');";
+    $tsStr = str_replace('\\', '\\\\', $str);    // js will escape a backslash
+    $typescript .= "\n    document.getElementById('math$uniq').innerHTML = am.parseMath('$tsStr');";
     // $neutered = str_replace('<', '&lt;', $result);
     $html .= "<tr>
     \n<td>{$str}</td>
@@ -227,20 +228,11 @@ function appnd(string $str, string $comment = '')
 function testSuite()
 {
 
-
-appnd('[[a,b]]');
-appnd('{[(1,2),(3,4)],[(1,2),(3,4)]}', 'should NOT be a column vector');
-appnd('{((1,2),(3,4)),((1,2),(3,4))}', 'like above');
-appnd('[((1,2),(3,4)),((1,2),(3,4))]', 'like above');
-appnd ('[( [(1,2),(3,4)] , [(1,2),(3,4)] ) , ( [(1,2),(3,4)] , [(1,2),(3,4)] )]', 'should be a matrix or matrices');
-
-/*
-    // appnd('bb abb b');
-    // appnd('hat(a)');
-    // appnd('x^2');
-    // appnd('cancel a');
-    appnd('\frac{a}{b}');
-    appnd('a/b');
+    appnd('[[a,b]]');
+    appnd('{[(1,2),(3,4)],[(1,2),(3,4)]}', 'should NOT be a column vector');
+    appnd('{((1,2),(3,4)),((1,2),(3,4))}', 'like above');
+    appnd('[((1,2),(3,4)),((1,2),(3,4))]', 'like above');
+    appnd('[( [(1,2),(3,4)] , [(1,2),(3,4)] ) , ( [(1,2),(3,4)] , [(1,2),(3,4)] )]', 'should be a matrix or matrices');
 
     appnd('x^2+y_1+z_12^34', 'subscripts as in TeX, but numbers are treated as a unit');
     appnd('sin^-1(x)', 'function names are treated as constants');
@@ -255,7 +247,8 @@ appnd ('[( [(1,2),(3,4)] , [(1,2),(3,4)] ) , ( [(1,2),(3,4)] , [(1,2),(3,4)] )]'
         'f^((n))(a) must be bracketed, else the numerator is only \'a\''
     );
 
-    appnd( 'f(x)=\\sum_{n=0}^\\infty\\frac{f^{(n)}(a)}{n!}(x-a)^n',
+    appnd(
+        'f(x)=\\sum_{n=0}^\\infty\\frac{f^{(n)}(a)}{n!}(x-a)^n',
         'standard LaTeX produces a similar result'
     );
 
@@ -271,10 +264,31 @@ appnd ('[( [(1,2),(3,4)] , [(1,2),(3,4)] ) , ( [(1,2),(3,4)] , [(1,2),(3,4)] )]'
     appnd('((a*b))/c', 'only one level of brackets is removed; * gives standard product');
     appnd('sqrt sqrt root3x', 'spaces are optional, only serve to split strings that should not match');
     appnd('<< a,b >> and {:(x,y),(u,v):}', 'angle brackets and invisible brackets');
-    appnd('(a,b]={x in RR | a &lt; x &lt;= b}', 'grouping brackets don\'t have to match');
+    appnd('(a,b)={x in RR | a < x < = b}', 'grouping brackets don\'t have to match');
     appnd('abc-123.45^-1.1', 'non-tokens are split into single characters, but decimal numbers are parsed with possible sign');
 
 
+
+    appnd('[[a,b,|,c],[d,e,|,f]]', 'augmented matrices');
+    appnd('{(2x,+,17y,=,23),(x,-,y,=,5):}', 'Matrices can be used for layout');
+    appnd('lim_(N->oo) sum_(i=0)^N', 'Complex subscripts');
+
+
+    appnd('int_0^1 f(x)dx','Subscripts must come before superscripts');
+    appnd('int_0^1 f(x)dx','Subscripts must come before superscripts');
+    
+
+    appnd('(dq)/(dp)','For variables other than x,y,z, or t you will need grouping symbols');
+
+
+    appnd('ubrace(1+2+3+4)_("4 terms")','Overbraces and underbraces'); 
+    appnd('obrace(1+2+3+4)_("4 terms")'); 
+    appnd('hat(ab) bar(xy) ulA vec v dotx ddot y');
+    appnd('bb{AB3}.bbb(AB).cc(AB).fr(AB).tt[AB].sf(AB)');
+    appnd('x+b/(2a)=+-sqrt((b^2)/(4a^2)-c/a)');
+    appnd('x_(1,2)=(-b+-sqrt(b^2-4ac))/(2a)');
+    /*
+        
     // appnd('a');
     // appnd('ab');
     // appnd('bold(a)');
@@ -427,4 +441,4 @@ appnd ('[( [(1,2),(3,4)] , [(1,2),(3,4)] ) , ( [(1,2),(3,4)] , [(1,2),(3,4)] )]'
     
     */
     // appnd('a"');
-    }
+}

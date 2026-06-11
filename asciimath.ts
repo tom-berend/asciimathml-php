@@ -1178,8 +1178,6 @@ export class AMserver {
         if (symbol.ttype == RIGHTBRACKET || symbol.ttype == LEFTRIGHT) {
             //    if (AMnestingDepth > 0) AMnestingDepth--;
             let res = this.detectMatrix(newFrag, symbol.output);
-            console.log(res)
-
 
             if (res.isMatrix) {
                 let r, c, row;

@@ -394,7 +394,7 @@ $AMsymbols = [
     ['input' => "o+", 'tag' => "mo", 'output' => "\u{2295}", 'tex' => "oplus", 'ttype' => $CONST],
     ['input' => "o-", 'tag' => "mo", 'output' => "\u{2296}", 'tex' => "ominus", 'ttype' => $CONST],
     ['input' => "ox", 'tag' => "mo", 'output' => "\u{2297}", 'tex' => "otimes", 'ttype' => $CONST],
-    ['input' => "o->", 'tag' => "mo", 'output' => "\u{2299}", 'tex' => "odot", 'ttype' => $CONST],
+    ['input' => "o.", 'tag' => "mo", 'output' => "\u{2299}", 'tex' => "odot", 'ttype' => $CONST],
     ['input' => "sum", 'tag' => "mo", 'output' => "\u{2211}", 'tex' => null, 'ttype' => $UNDEROVER],
     ['input' => "prod", 'tag' => "mo", 'output' => "\u{220F}", 'tex' => null, 'ttype' => $UNDEROVER],
     ['input' => "^^", 'tag' => "mo", 'output' => "\u{2227}", 'tex' => "wedge", 'ttype' => $CONST],
@@ -410,7 +410,7 @@ $AMsymbols = [
 
     //binary relation symbols
     ['input' => "!=", 'tag' => "mo", 'output' => "\u{2260}", 'tex' => "ne", 'ttype' => $CONST],
-    ['input' => "=>=", 'tag' => "mo", 'output' => "=>=", 'tex' => null, 'ttype' => $CONST],
+    ['input' => ":=", 'tag' => "mo", 'output' => ":=", 'tex' => null, 'ttype' => $CONST],
     ['input' => "lt", 'tag' => "mo", 'output' => "<", 'tex' => null, 'ttype' => $CONST],
     ['input' => "<=", 'tag' => "mo", 'output' => "\u{2264}", 'tex' => "le", 'ttype' => $CONST],
     ['input' => "lt=", 'tag' => "mo", 'output' => "\u{2264}", 'tex' => "leq", 'ttype' => $CONST],
@@ -468,23 +468,23 @@ $AMsymbols = [
     ['input' => "{", 'tag' => "mo", 'output' => "{", 'tex' => null, 'ttype' => $LEFTBRACKET],
     ['input' => "}", 'tag' => "mo", 'output' => "}", 'tex' => null, 'ttype' => $RIGHTBRACKET],
     ['input' => "|", 'tag' => "mo", 'output' => "|", 'tex' => null, 'ttype' => $LEFTRIGHT],
-    ['input' => "=>|=>", 'tag' => "mo", 'output' => "|", 'tex' => null, 'ttype' => $CONST],
-    ['input' => "|=>", 'tag' => "mo", 'output' => "|", 'tex' => null, 'ttype' => $LEFTBRACKET],
-    ['input' => "=>|", 'tag' => "mo", 'output' => "|", 'tex' => null, 'ttype' => $RIGHTBRACKET],
+    ['input' => ":|:", 'tag' => "mo", 'output' => "|", 'tex' => null, 'ttype' => $CONST],
+    ['input' => "|:", 'tag' => "mo", 'output' => "|", 'tex' => null, 'ttype' => $LEFTBRACKET],
+    ['input' => ":|", 'tag' => "mo", 'output' => "|", 'tex' => null, 'ttype' => $RIGHTBRACKET],
     //{'input' =>"or", 'tag' =>"mo", 'output' =>"or", 'tex' =>null, 'ttype' =>$LEFTRIGHT},
-    ['input' => "(=>", 'tag' => "mo", 'output' => "\u{2329}", 'tex' => "langle", 'ttype' => $LEFTBRACKET],
-    ['input' => "=>)", 'tag' => "mo", 'output' => "\u{232A}", 'tex' => "rangle", 'ttype' => $RIGHTBRACKET],
+    ['input' => "(:", 'tag' => "mo", 'output' => "\u{2329}", 'tex' => "langle", 'ttype' => $LEFTBRACKET],
+    ['input' => ":)", 'tag' => "mo", 'output' => "\u{232A}", 'tex' => "rangle", 'ttype' => $RIGHTBRACKET],
     ['input' => "<<", 'tag' => "mo", 'output' => "\u{2329}", 'tex' => null, 'ttype' => $LEFTBRACKET],
     ['input' => ">>", 'tag' => "mo", 'output' => "\u{232A}", 'tex' => null, 'ttype' => $RIGHTBRACKET],
-    ['input' => "{=>", 'tag' => "mo", 'output' => "{=>", 'tex' => null, 'ttype' => $LEFTBRACKET, 'invisible' => true],
-    ['input' => "=>}", 'tag' => "mo", 'output' => "=>}", 'tex' => null, 'ttype' => $RIGHTBRACKET, 'invisible' => true],
+    ['input' => "{:", 'tag' => "mo", 'output' => "{:", 'tex' => null, 'ttype' => $LEFTBRACKET, 'invisible' => true],
+    ['input' => ":}", 'tag' => "mo", 'output' => ":}", 'tex' => null, 'ttype' => $RIGHTBRACKET, 'invisible' => true],
 
     //miscellaneous symbols
     ['input' => "int", 'tag' => "mo", 'output' => "\u{222B}", 'tex' => null, 'ttype' => $CONST],
-    ['input' => "dx", 'tag' => "mi", 'output' => "{=>d x=>}", 'tex' => null, 'ttype' => $DEFINITION],
-    ['input' => "dy", 'tag' => "mi", 'output' => "{=>d y=>}", 'tex' => null, 'ttype' => $DEFINITION],
-    ['input' => "dz", 'tag' => "mi", 'output' => "{=>d z=>}", 'tex' => null, 'ttype' => $DEFINITION],
-    ['input' => "dt", 'tag' => "mi", 'output' => "{=>d t=>}", 'tex' => null, 'ttype' => $DEFINITION],
+    ['input' => "dx", 'tag' => "mi", 'output' => "{:d x:}", 'tex' => null, 'ttype' => $DEFINITION],
+    ['input' => "dy", 'tag' => "mi", 'output' => "{:d y:}", 'tex' => null, 'ttype' => $DEFINITION],
+    ['input' => "dz", 'tag' => "mi", 'output' => "{:d z:}", 'tex' => null, 'ttype' => $DEFINITION],
+    ['input' => "dt", 'tag' => "mi", 'output' => "{:d t:}", 'tex' => null, 'ttype' => $DEFINITION],
     ['input' => "oint", 'tag' => "mo", 'output' => "\u{222E}", 'tex' => null, 'ttype' => $CONST],
     ['input' => "del", 'tag' => "mo", 'output' => "\u{2202}", 'tex' => "partial", 'ttype' => $CONST],
     ['input' => "grad", 'tag' => "mo", 'output' => "\u{2207}", 'tex' => "nabla", 'ttype' => $CONST],
@@ -493,9 +493,9 @@ $AMsymbols = [
     ['input' => "O/", 'tag' => "mo", 'output' => "\u{2205}", 'tex' => "emptyset", 'ttype' => $CONST],
     ['input' => "oo", 'tag' => "mo", 'output' => "\u{221E}", 'tex' => "infty", 'ttype' => $CONST],
     ['input' => "aleph", 'tag' => "mo", 'output' => "\u{2135}", 'tex' => null, 'ttype' => $CONST],
-    ['input' => "->->->", 'tag' => "mo", 'output' => "->->->", 'tex' => "ldots", 'ttype' => $CONST],
-    ['input' => "=>->", 'tag' => "mo", 'output' => "\u{2234}", 'tex' => "therefore", 'ttype' => $CONST],
-    ['input' => "=>'", 'tag' => "mo", 'output' => "\u{2235}", 'tex' => "because", 'ttype' => $CONST],
+    ['input' => "...", 'tag' => "mo", 'output' => "...", 'tex' => "ldots", 'ttype' => $CONST],
+    ['input' => ":.", 'tag' => "mo", 'output' => "\u{2234}", 'tex' => "therefore", 'ttype' => $CONST],
+    ['input' => ":'", 'tag' => "mo", 'output' => "\u{2235}", 'tex' => "because", 'ttype' => $CONST],
     ['input' => "/_", 'tag' => "mo", 'output' => "\u{2220}", 'tex' => "angle", 'ttype' => $CONST],
     ['input' => "/_\\", 'tag' => "mo", 'output' => "\u{25B3}", 'tex' => "triangle", 'ttype' => $CONST],
     ['input' => "'", 'tag' => "mo", 'output' => "\u{2032}", 'tex' => "prime", 'ttype' => $CONST],
@@ -608,8 +608,8 @@ $AMsymbols = [
     ['input' => "hat", 'tag' => "mover", 'output' => "\u{0302}", 'tex' => null, 'ttype' => $UNARY, 'acc' => true],
     ['input' => "bar", 'tag' => "mover", 'output' => "\u{00AF}", 'tex' => "overline", 'ttype' => $UNARY, 'acc' => true],
     ['input' => "vec", 'tag' => "mover", 'output' => "\u{2192}", 'tex' => null, 'ttype' => $UNARY, 'acc' => true],
-    ['input' => "dot", 'tag' => "mover", 'output' => "->", 'tex' => null, 'ttype' => $UNARY, 'acc' => true],
-    ['input' => "ddot", 'tag' => "mover", 'output' => "->->", 'tex' => null, 'ttype' => $UNARY, 'acc' => true],
+    ['input' => "dot", 'tag' => "mover", 'output' => ".", 'tex' => null, 'ttype' => $UNARY, 'acc' => true],
+    ['input' => "ddot", 'tag' => "mover", 'output' => "..", 'tex' => null, 'ttype' => $UNARY, 'acc' => true],
     ['input' => "overarc", 'tag' => "mover", 'output' => "\u{23DC}", 'tex' => "overparen", 'ttype' => $UNARY, 'acc' => true],
     ['input' => "ul", 'tag' => "munder", 'output' => "\u{0332}", 'tex' => "underline", 'ttype' => $UNARY, 'acc' => true],
     ['input' => "ubrace", 'tag' => "munder", 'output' => "\u{23DF}", 'tex' => "underbrace", 'ttype' => $UNARYUNDEROVER, 'acc' => true],
@@ -680,7 +680,7 @@ class AMserver
     public $displaystyle = true;      // puts limits above and below large operators
     public $showasciiformulaonhover = false; // helps students learn ASCIIMath
     public $listseparator = ",";      // when decimalsign="," you can opt to use ";" as listseparator
-    public $decimalsign = "->";        // if "," then when writing lists or matrices put
+    public $decimalsign = ".";        // if "," then when writing lists or matrices put
     public $addmathvariant = false;  // true to add mathvariant on font changes->
     public $cancelColor = 'red';     // sets default color for cancel
 
@@ -786,7 +786,9 @@ class AMserver
 
     function AMremoveCharsAndBlanks(string $str, int $n)
     {
-        return trim(substr($str, $n));
+        $ret= trim(substr($str, $n));
+        $ret = str_replace('\\',' ',$ret);
+        return $ret;
 
         // //remove n characters and any following blanks
         // if ($str[$n] == "\\" and $str[$n + 1] != "\\" and $str[$n + 1] != " ")
@@ -1319,7 +1321,7 @@ class AMserver
                             count($res['rows'][$r][$c]) == 1 and
                             $res['rows'][$r][$c][0]->nodeName == "mrow" and
                             count($res['rows'][$r][$c][0]->childNodes) == 1 and
-                            $res['rows'][$r][$c][0]->firstChild->firstChild->nodeValue == "\u2223"
+                            $res['rows'][$r][$c][0]->firstChild()->firstChild()->nodeValue == "\u2223"
                         ) {
                             // found columnline marker
                             if ($r == 0) {
