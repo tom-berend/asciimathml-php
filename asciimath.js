@@ -228,7 +228,7 @@ let AMsymbols = [
     { input: "delta", tag: "mi", output: "\u03B4", tex: null, ttype: CONST },
     { input: "Delta", tag: "mo", output: "\u0394", tex: null, ttype: CONST },
     { input: "epsi", tag: "mi", output: "\u03B5", tex: "epsilon", ttype: CONST },
-    { input: "varepsilon", tag: "mi", output: "\u025B", tex: null, ttype: CONST },
+    { input: "varepsilon", tag: "mi", output: "\u03F5", tex: null, ttype: CONST },
     { input: "eta", tag: "mi", output: "\u03B7", tex: null, ttype: CONST },
     { input: "gamma", tag: "mi", output: "\u03B3", tex: null, ttype: CONST },
     { input: "Gamma", tag: "mo", output: "\u0393", tex: null, ttype: CONST },

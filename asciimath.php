@@ -1,5 +1,7 @@
 <?php
 
+// TODO:  convert byte strings to multibyte (eg: mb_substr())
+
 declare(strict_types=1);   // strict typing
 
 
@@ -213,18 +215,13 @@ class AMNode
 
             $html .= "<{$this->nodeName}{$attributes}{$style}>";
         }
-        // $html .= 'a';
         if ($this->hasChildNodes() and $this->firstChild()->nodeName == '#text') {
-            // $html .= 'f';
             $html .= $this->firstChild()->nodeValue;
-            // $html .= 'b';
         } else if ($this->hasChildNodes()) {
-            // $html .= 'c';
             for ($i = 0; $i < count($this->children); $i++) {
                 $html .= $this->children[$i]->flatten();
             }
         }
-        // $html .= 'e';
         $html .= "</{$this->nodeName}>";
         return $html;
     }
@@ -343,7 +340,7 @@ $AMsymbols = [
     ['input' => "delta", 'tag' => "mi", 'output' => "\u{03B4}", 'tex' => null, 'ttype' => $CONST],
     ['input' => "Delta", 'tag' => "mo", 'output' => "\u{0394}", 'tex' => null, 'ttype' => $CONST],
     ['input' => "epsi", 'tag' => "mi", 'output' => "\u{03B5}", 'tex' => "epsilon", 'ttype' => $CONST],
-    ['input' => "varepsilon", 'tag' => "mi", 'output' => "\u{025B}", 'tex' => null, 'ttype' => $CONST],
+    ['input' => "varepsilon", 'tag' => "mi", 'output' => "\u{03F5}", 'tex' => null, 'ttype' => $CONST],
     ['input' => "eta", 'tag' => "mi", 'output' => "\u{03B7}", 'tex' => null, 'ttype' => $CONST],
     ['input' => "gamma", 'tag' => "mi", 'output' => "\u{03B3}", 'tex' => null, 'ttype' => $CONST],
     ['input' => "Gamma", 'tag' => "mo", 'output' => "\u{0393}", 'tex' => null, 'ttype' => $CONST],
@@ -636,6 +633,7 @@ $AMsymbols = [
     ['input' => "bbit", 'tag' => "", 'ttype' => $UNARY, 'output' => "bbit", 'codes' => 'bold-italic'],
     ['input' => "bbsfit", 'tag' => "", 'ttype' => $UNARY, 'output' => "bbsfit", 'codes' => 'sans-serif-bold-italic'],
     ['input' => "bold", 'tag' => "", 'ttype' => $UNARY, 'output' => "bold"],
+    ['input' => "italic", 'tag' => "", 'ttype' => $UNARY, 'output' => "italic"],
 ];
 
 
@@ -786,8 +784,8 @@ class AMserver
 
     function AMremoveCharsAndBlanks(string $str, int $n)
     {
-        $ret= trim(substr($str, $n));
-        $ret = str_replace('\\',' ',$ret);
+        $ret = trim(substr($str, $n));
+        $ret = str_replace('\\', ' ', $ret);
         return $ret;
 
         // //remove n characters and any following blanks
@@ -980,7 +978,7 @@ class AMserver
                     preg_match('/^(-?[\d\.]+)\s*(em|mu)?$/', $st, $m);
                     if (!$m) {
                         $st = "0em";
-                    } else if (!$m[2] || $m[2] == "mu") {
+                    } else if (!isset($m[2]) or $m[2] == "mu") {
                         $st = ($m[1] / 16) . "em";
                     }
                     $node = $this->createMmlNode($symbol['tag']);
@@ -1008,7 +1006,7 @@ class AMserver
                 $str = $this->AMremoveCharsAndBlanks($str, strlen($symbol['input']));
                 $result = $this->AMparseSexpr($str);
 
-                if ($result[0] == null) {
+                if (count($result) == 0) {
                     if ($symbol['tag'] == "mi" or $symbol['tag'] == "mo") {
                         return [$this->createMmlNode(
                             $symbol['tag'],
@@ -1019,7 +1017,7 @@ class AMserver
                     }
                 }
                 if ($symbol['func'] ?? false) { // functions hack
-                    $st = $str[0];
+                    $st = (strlen($str) > 0) ? $str[0] : '';  // str[0] may not exist, like 'tilde sin'
                     if (
                         $st == "^" or $st == "_" or $st == "/" or $st == "|" or $st == $this->listseparator or
                         (strlen($symbol['input']) == 1 and preg_match('/\w/', $symbol['input']) and $st != "(")
@@ -1041,9 +1039,9 @@ class AMserver
                 if ($symbol['input'] == "sqrt") {           // sqrt
                     return [$this->createMmlNode($symbol['tag'], $result[0]), $result[1]];
                 } else if (isset($symbol['rewriteleftright'])) {    // abs, floor, ceil
-                    $node = $this->createMmlNode("mrow", $this->createMmlNode("mo", $this->createTextNode($symbol->rewriteleftright[0])));
+                    $node = $this->createMmlNode("mrow", $this->createMmlNode("mo", $this->createTextNode($symbol['rewriteleftright'][0])));
                     $node->appendChild($result[0]);
-                    $node->appendChild($this->createMmlNode("mo", $this->createTextNode($symbol->rewriteleftright[1])));
+                    $node->appendChild($this->createMmlNode("mo", $this->createTextNode($symbol['rewriteleftright'][1])));
                     return [$node, $result[1]];
                 } else if ($symbol['input'] == "cancel") {   // cancel
                     $node = $this->createMmlNode($symbol['tag'], $result[0]);
@@ -1435,7 +1433,7 @@ class AMserver
             // Count comma-separated elements between the brackets
             // and collect cells for return
             // (commas as direct <mo> children of this mrow are separators)
-            $inner = array_slice($cells,1, -1);
+            $inner = array_slice($cells, 1, -1);
             $elementCount = 1;
             $cellsout = [];
             $curcell = [];
@@ -1451,14 +1449,14 @@ class AMserver
                     array_push($curcell, $cell);
                 }
             }
-            array_push($cellsout ,$curcell);
+            array_push($cellsout, $curcell);
 
             // if 1 element inside braces and it's mtable, it's seeing a matrix, not a row
             // if 1 element and 1 row, it's just double-parens
-            if ($elementCount == 1 and count($cellsout[0])> 0 and ($cellsout[0][0] -> nodeName == 'mtable' or count($rows) == 1)) {
+            if ($elementCount == 1 and count($cellsout[0]) > 0 and ($cellsout[0][0]->nodeName == 'mtable' or count($rows) == 1)) {
                 return ['isMatrix' => false, 'rows' => []];
             }
-            array_push($rowsout,$cellsout);
+            array_push($rowsout, $cellsout);
 
             // Check consistency across rows
             if ($expectedOpen === null) {
@@ -1466,9 +1464,15 @@ class AMserver
                 $expectedClose = $closeBracket;
                 $expectedCount = $elementCount;
             } else {
-                if ($openBracket !==  $expectedOpen) {return   ['isMatrix' => false, 'rows' => []];}
-                if ($closeBracket !== $expectedClose){ return ['isMatrix' => false, 'rows' => []];}
-                if ($elementCount !== $expectedCount){ return ['isMatrix' => false, 'rows' => []];}
+                if ($openBracket !==  $expectedOpen) {
+                    return   ['isMatrix' => false, 'rows' => []];
+                }
+                if ($closeBracket !== $expectedClose) {
+                    return ['isMatrix' => false, 'rows' => []];
+                }
+                if ($elementCount !== $expectedCount) {
+                    return ['isMatrix' => false, 'rows' => []];
+                }
             }
         }
 

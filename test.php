@@ -1,18 +1,14 @@
 <?php
 
 declare(strict_types=1);   // strict typing
+
 ini_set('display_errors', '1');
 ini_set('display_startup_errors', '1');
 error_reporting(E_ALL);
-$GLOBALS['debugMode'] = true;
 
 
 function printNice(mixed $elem, $comment = '')
 {
-
-    if (!$GLOBALS['debugMode']) {
-        return;
-    } // debugging isn't on
 
 
     $debug = debug_backtrace();
@@ -287,38 +283,37 @@ function testSuite()
     appnd('bb{AB3}.bbb(AB).cc(AB).fr(AB).tt[AB].sf(AB)');
     appnd('x+b/(2a)=+-sqrt((b^2)/(4a^2)-c/a)');
     appnd('x_(1,2)=(-b+-sqrt(b^2-4ac))/(2a)');
-    /*
+    
         
-    // appnd('a');
-    // appnd('ab');
-    // appnd('bold(a)');
-    // appnd(' a  bold(b) c');
-    // appnd(' a  bold b c');
-    // appnd('hat(a)');
-    // appnd('c thinspace d ');
-    // appnd('a mspace(5)b mspace(1em)c thinspace thinspace d ');
+    appnd('a');
+    appnd('ab');
+    appnd('bold(a)');
+    appnd(' a  bold(b) c');
+    appnd(' a  bold b c');
+    appnd('hat(a)');
+    appnd('c thinspace d ');
+    appnd('a mspace(5)b mspace(1em)c thinspace thinspace d ');
 
 
-    // appnd('"a"b');
+    appnd('"a"b');
 
 
 
-    // appnd('bb a " " bold b');
-    // appnd('bb " bb " bb c bb(c) " " bold(bb(b))');
-    // appnd('sf " sf " sf c sf(c) " " bold(sf(b))');
-    // appnd('sfit " sfit " sfit c sfit(c) " " bold(sfit(b))');
-    // appnd('bbsf " bbsf " bbsf c bbsf(c) " " bold(bbsf(b))');
-    // appnd('bbb " bbb " bbb c bbb(c) " " bold(bb(b))');
-    // appnd('bbcc " bbcc " bbcc c " " bold(bbcc(b))');
-    // appnd('tt " tt " tt c tt(c)  " " bold(tt(b))');
-    // appnd('fr " fr " fr c fr(c)  " " bold(fr(b))');
-    // appnd('bbfr " bbfr " bbfr c bbfr(c) " " bold(bbfr(b))');
-    // appnd('bbit " bbit " bbit c bbit(c) " " bold(bbit(b))');
-    // appnd('bbsfit " bbsfit " bbsfit c bbsfit(c) " " bold(bbsfit(b))');
-    // appnd('bold " bold " bold c bold(b)');
+    appnd('bb a " " bold b');
+    appnd('bb " bb " bb c bb(c) " " bold(bb(b))');
+    appnd('sf " sf " sf c sf(c) " " bold(sf(b))');
+    appnd('sfit " sfit " sfit c sfit(c) " " bold(sfit(b))');
+    appnd('bbsf " bbsf " bbsf c bbsf(c) " " bold(bbsf(b))');
+    appnd('bbb " bbb " bbb c bbb(c) " " bold(bb(b))');
+    appnd('bbcc " bbcc " bbcc c " " bold(bbcc(b))');
+    appnd('tt " tt " tt c tt(c)  " " bold(tt(b))');
+    appnd('fr " fr " fr c fr(c)  " " bold(fr(b))');
+    appnd('bbfr " bbfr " bbfr c bbfr(c) " " bold(bbfr(b))');
+    appnd('bbit " bbit " bbit c bbit(c) " " bold(bbit(b))');
+    appnd('bbsfit " bbsfit " bbsfit c bbsfit(c) " " bold(bbsfit(b))');
+    appnd('bold " bold " bold c bold(b)');
 
-    // appnd('a color(red) b color(black) c');
-    // return;
+    appnd('a color(red) b color(black) c');
     appnd('cancel (x/y)');
     appnd('cancel (x/y)');
     appnd('cancel (x) /y');
@@ -354,7 +349,6 @@ function testSuite()
     appnd('bold abc');
     appnd('bold(abc)');
     
-    /*
     appnd('$%*');
     appnd('abc 01239 $%*');
     appnd('bold "abc 01239 $%*"');
@@ -412,8 +406,6 @@ function testSuite()
     appnd('{[ a,b,c,d ]}');
     appnd('[[a,b]]');
     appnd('[[a,b][c,d]]');
-    */
-    /*
     appnd('sum_(i=1)^n i^3=((n(n+1))/2)^2');
     appnd('[[a,b],[c,d]]');
     
@@ -438,7 +430,11 @@ function testSuite()
     appnd('4 -: 2');
     appnd('a -: b');
     appnd('a divide b');
-    
-    */
-    // appnd('a"');
-}
+    appnd('norm a');
+    appnd('floor a ceil b');
+    appnd('hat f');
+    appnd('gfgf');
+    appnd('epsi epsilon varepsilon');
+
+/** */
+    }
