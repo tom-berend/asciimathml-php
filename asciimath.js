@@ -228,7 +228,7 @@ let AMsymbols = [
     { input: "delta", tag: "mi", output: "\u03B4", tex: null, ttype: CONST },
     { input: "Delta", tag: "mo", output: "\u0394", tex: null, ttype: CONST },
     { input: "epsi", tag: "mi", output: "\u03B5", tex: "epsilon", ttype: CONST },
-    { input: "varepsilon", tag: "mi", output: "\u03F5", tex: null, ttype: CONST },
+    { input: "varepsilon", tag: "mi", output: "\u025B", tex: null, ttype: CONST },
     { input: "eta", tag: "mi", output: "\u03B7", tex: null, ttype: CONST },
     { input: "gamma", tag: "mi", output: "\u03B3", tex: null, ttype: CONST },
     { input: "Gamma", tag: "mo", output: "\u0393", tex: null, ttype: CONST },
@@ -540,7 +540,6 @@ export class AMserver {
         this.addmathvariant = false; // true to add mathvariant on font changes.
         this.cancelColor = 'red'; // sets default color for cancel
         this.initSymbols();
-        this.currentColor = this.mathcolor;
     }
     cancelStyle(color) {
         return `
@@ -907,11 +906,8 @@ export class AMserver {
                     st = str.slice(1, i);
                     // Make a mathml node
                     node = this.createMmlNode(symbol.tag, result2[0]);
-                    // Set the correct attribute
-                    if (symbol.input === "color") {
-                        node.style += "color:${st};";
-                        this.currentColor = st;
-                    }
+                    if (symbol.input === "color")
+                        node.setAttribute("mathcolor", st);
                     else if (symbol.input === "class")
                         node.setAttribute("class", st);
                     else if (symbol.input === "id")
@@ -1122,7 +1118,7 @@ export class AMserver {
                                 columnlines.push("solid");
                             }
                             if (c > 0) {
-                                row.lastChild.style += `border-right: 1px solid ${this.currentColor};`;
+                                row.lastChild.style += `border-right: 1px solid ${this.mathcolor};`;
                             }
                         }
                         else {

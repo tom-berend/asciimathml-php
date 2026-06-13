@@ -139,7 +139,8 @@ $html .= '<title>ASCIIMathML test suite</title>
     <!-- the original ASCIIMathML.js for testing -->
     <script type="text/javascript" src="lib/ASCIIMathML.js"></script>
 
-    <!-- the original ASCIIMathML.js for testing -->
+    <link href="https://fonts.googleapis.com/css2?family=STIX Two Math" rel="stylesheet">
+
 
     <style type="text/css">
         table {
@@ -157,13 +158,8 @@ $html .= '<title>ASCIIMathML test suite</title>
             text-align: center;
         }
 
-        @font-face {
-           font-family: "STIX-Two-Math";
-           src: url("./lib/STIX2Math.otf") format("opentype");
-           font-display: block;
-        }
         math {
-            font-family: STIX-Two-Math;
+            font-family: STIX Two Math;
             font-size: larger;
         }    
     </style>';
@@ -223,9 +219,8 @@ function appnd(string $str, string $comment = '')
 
 function testSuite()
 {
-    appnd('[[a,b,|,c],[d,e,|,f]]', 'augmented matrices');
-/*
 
+    appnd ('phi,varphi');
     appnd('[[a,b]]');
     appnd('{[(1,2),(3,4)],[(1,2),(3,4)]}', 'should NOT be a column vector');
     appnd('{((1,2),(3,4)),((1,2),(3,4))}', 'like above');
@@ -437,6 +432,8 @@ function testSuite()
     appnd('hat f');
     appnd('gfgf');
     appnd('epsi epsilon varepsilon');
+
+    appnd('color (red) ([[a,b,|,c],[d,e,|,f]])','color not right for augment line');
 
 /** */
     }

@@ -343,7 +343,7 @@ $AMsymbols = [
     ['input' => "delta", 'tag' => "mi", 'output' => "\u{03B4}", 'tex' => null, 'ttype' => $CONST],
     ['input' => "Delta", 'tag' => "mo", 'output' => "\u{0394}", 'tex' => null, 'ttype' => $CONST],
     ['input' => "epsi", 'tag' => "mi", 'output' => "\u{03B5}", 'tex' => "epsilon", 'ttype' => $CONST],
-    ['input' => "varepsilon", 'tag' => "mi", 'output' => "\u{03F5}", 'tex' => null, 'ttype' => $CONST],
+    ['input' => "varepsilon", 'tag' => "mi", 'output' => "\u{025B}", 'tex' => null, 'ttype' => $CONST],
     ['input' => "eta", 'tag' => "mi", 'output' => "\u{03B7}", 'tex' => null, 'ttype' => $CONST],
     ['input' => "gamma", 'tag' => "mi", 'output' => "\u{03B3}", 'tex' => null, 'ttype' => $CONST],
     ['input' => "Gamma", 'tag' => "mo", 'output' => "\u{0393}", 'tex' => null, 'ttype' => $CONST],
@@ -685,12 +685,9 @@ class AMserver
     public $addmathvariant = false;  // true to add mathvariant on font changes->
     public $cancelColor = 'red';     // sets default color for cancel
 
-    public string $currentColor;
-
     function __construct()
     {
         $this->initSymbols();
-        $this->currentColor = $this->mathcolor;
     }
 
     function cancelStyle(string $color): string
@@ -1108,15 +1105,15 @@ class AMserver
                     if ($str[0] == "{")      $i = strpos($str, '}');
                     else if ($str[0] == "(") $i = strpos($str, ")");
                     else if ($str[0] == "[") $i = strpos($str, "]");
-                    $st = substr($str, $i);
+                    $st = substr($str, 1,$i-1);
 
                     // Make a mathml $node
                     $node = $this->createMmlNode($symbol['tag'], $result2[0]);
 
                     // Set the correct attribute
                     if ($symbol['input'] === "color") {
-                        $node->style .= "color:$st;";
-                        $this->currentColor = $st;
+                        // printNice("'$st'");
+                        $node->setAttribute("mathcolor", $st);
                     } else if ($symbol['input'] === "class") $node->setAttribute("class", $st);
                     else if ($symbol['input'] === "id") $node->setAttribute("id", $st);
                     return [$node, $result2[1]];
@@ -1334,7 +1331,7 @@ class AMserver
                                 array_push($columnlines, "solid");
                             }
                             if ($c > 0) {
-                                $row->lastChild()->style .= "border-right: 1px solid {$this->currentColor};";
+                                $row->lastChild()->style .= "border-right: 1px solid {$this->mathcolor};";
                             }
                         } else {
                             $cell = $this->createMmlNode('mtd');
