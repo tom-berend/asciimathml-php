@@ -65,7 +65,7 @@ function printNiceHelper(mixed $elem, $max_level = 10, $print_nice_stack = array
 
     if (is_object($elem)) {
         //$HTML .= htmlentities($elem).'<br>';
-        $HTML .= '<b>object ' . get_class($elem) . ' ' . $elem->nodeName . ' ' . $elem->firstChild()->nodeValue . '</b>'; //strval($elem);
+        $HTML .= '<b>object ' . get_class($elem) . ' ' . $elem->nodeName . ' ' . $elem->nodeValue . '</b>'; //strval($elem);
         return ($HTML);
     }
 
@@ -223,6 +223,8 @@ function appnd(string $str, string $comment = '')
 
 function testSuite()
 {
+    appnd('[[a,b,|,c],[d,e,|,f]]', 'augmented matrices');
+/*
 
     appnd('[[a,b]]');
     appnd('{[(1,2),(3,4)],[(1,2),(3,4)]}', 'should NOT be a column vector');

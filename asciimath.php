@@ -1,8 +1,11 @@
 <?php
 
-// TODO:  convert byte strings to multibyte (eg: mb_substr())
 
 declare(strict_types=1);   // strict typing
+
+use Dom\ChildNode;
+
+ini_set('default_charset', 'UTF-8');
 
 
 /*
@@ -682,10 +685,12 @@ class AMserver
     public $addmathvariant = false;  // true to add mathvariant on font changes->
     public $cancelColor = 'red';     // sets default color for cancel
 
+    public string $currentColor;
 
     function __construct()
     {
         $this->initSymbols();
+        $this->currentColor = $this->mathcolor;
     }
 
     function cancelStyle(string $color): string
@@ -1109,8 +1114,10 @@ class AMserver
                     $node = $this->createMmlNode($symbol['tag'], $result2[0]);
 
                     // Set the correct attribute
-                    if ($symbol['input'] === "color") $node->style .= "color:$st;";
-                    else if ($symbol['input'] === "class") $node->setAttribute("class", $st);
+                    if ($symbol['input'] === "color") {
+                        $node->style .= "color:$st;";
+                        $this->currentColor = $st;
+                    } else if ($symbol['input'] === "class") $node->setAttribute("class", $st);
                     else if ($symbol['input'] === "id") $node->setAttribute("id", $st);
                     return [$node, $result2[1]];
                 }
@@ -1319,12 +1326,15 @@ class AMserver
                             count($res['rows'][$r][$c]) == 1 and
                             $res['rows'][$r][$c][0]->nodeName == "mrow" and
                             count($res['rows'][$r][$c][0]->childNodes) == 1 and
-                            $res['rows'][$r][$c][0]->firstChild()->firstChild()->nodeValue == "\u2223"
+                            $res['rows'][$r][$c][0]->firstChild()->firstChild()->nodeValue == "\u{2223}"
                         ) {
                             // found columnline marker
                             if ($r == 0) {
                                 array_pop($columnlines);
                                 array_push($columnlines, "solid");
+                            }
+                            if ($c > 0) {
+                                $row->lastChild()->style .= "border-right: 1px solid {$this->currentColor};";
                             }
                         } else {
                             $cell = $this->createMmlNode('mtd');

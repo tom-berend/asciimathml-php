@@ -146,71 +146,71 @@ export class AMNode {
         this.childNodes = [x];
         this.children = (x.nodeName !== '#text') ? [x] : [];
     }
-     
+
     replaceChild(newChild: AMNode, oldChild: AMNode): AMNode {
-            for (let i = 0; i < this.childNodes.length; i++) {
-                if (oldChild.unique === this.childNodes[i].unique) {
-                    this.childNodes[i] = newChild  // just reassigns the pointer
-                }
+        for (let i = 0; i < this.childNodes.length; i++) {
+            if (oldChild.unique === this.childNodes[i].unique) {
+                this.childNodes[i] = newChild  // just reassigns the pointer
             }
-            if (newChild.nodeName !== '#text' && newChild.nodeName !== '') {  // fragments don't go into children
-                for (let i = 0; i < this.children.length; i++) {
-                    if (oldChild.unique === this.children[i].unique) {
-                        this.children[i] = newChild
-                    }
-                }
-            }
-            oldChild.parent = null
-            return oldChild
         }
-
-        removeChild(node: AMNode): AMNode {
-            let removed = false
-            for (let i = 0; i < this.childNodes.length; i++) {
-                if (node.unique == this.childNodes[i].unique) { // ||
-                    this.childNodes.splice(i, 1)    // preserves iterator sequence
-                    removed = true
-                }
-            }
-            if (!removed)
-                throw new Error(`Failed to execute 'removeChild'. The node to be removed is not a child of this node.)`)
-
+        if (newChild.nodeName !== '#text' && newChild.nodeName !== '') {  // fragments don't go into children
             for (let i = 0; i < this.children.length; i++) {
-                if (node.unique === this.children[i].unique) {
-                    this.children.splice(i, 1)
+                if (oldChild.unique === this.children[i].unique) {
+                    this.children[i] = newChild
                 }
             }
-            node.parent = null
-            return node
         }
-
-        /** turn a tree of AMNodes into an HTML string */
-        flatten(): string {
-            let html = ''
-
-            let style = (this.style.length > 0) ? ` style = \'${this.style}\'` : '';
-
-            if (this.nodeName !== '#text' && this.nodeName !== '') {
-
-                let attributes = ''
-                for (let [key, value] of Object.entries(this.attributes))
-                    attributes += ` ${key}= "${value}"`
-
-                html += `<${this.nodeName}${attributes}${style}>`
-            }
-            if (this.hasChildNodes() && this.firstChild.nodeName == '#text') {
-                html += this.firstChild.nodeValue
-            } else if (this.hasChildNodes()) {
-                for (let i = 0; i < this.children.length; i++) {
-                    html += this.children[i].flatten()
-                }
-            }
-            html += `</${this.nodeName}>`
-            return html
-        }
-
-
+        oldChild.parent = null
+        return oldChild
     }
+
+    removeChild(node: AMNode): AMNode {
+        let removed = false
+        for (let i = 0; i < this.childNodes.length; i++) {
+            if (node.unique == this.childNodes[i].unique) { // ||
+                this.childNodes.splice(i, 1)    // preserves iterator sequence
+                removed = true
+            }
+        }
+        if (!removed)
+            throw new Error(`Failed to execute 'removeChild'. The node to be removed is not a child of this node.)`)
+
+        for (let i = 0; i < this.children.length; i++) {
+            if (node.unique === this.children[i].unique) {
+                this.children.splice(i, 1)
+            }
+        }
+        node.parent = null
+        return node
+    }
+
+    /** turn a tree of AMNodes into an HTML string */
+    flatten(): string {
+        let html = ''
+
+        let style = (this.style.length > 0) ? ` style = \'${this.style}\'` : '';
+
+        if (this.nodeName !== '#text' && this.nodeName !== '') {
+
+            let attributes = ''
+            for (let [key, value] of Object.entries(this.attributes))
+                attributes += ` ${key}= "${value}"`
+
+            html += `<${this.nodeName}${attributes}${style}>`
+        }
+        if (this.hasChildNodes() && this.firstChild.nodeName == '#text') {
+            html += this.firstChild.nodeValue
+        } else if (this.hasChildNodes()) {
+            for (let i = 0; i < this.children.length; i++) {
+                html += this.children[i].flatten()
+            }
+        }
+        html += `</${this.nodeName}>`
+        return html
+    }
+
+
+}
 
 
 
@@ -618,8 +618,11 @@ export class AMserver {
     addmathvariant = false;  // true to add mathvariant on font changes.
     cancelColor = 'red';     // sets default color for cancel
 
+    currentColor :string;    //
+
     constructor() {
         this.initSymbols();
+        this.currentColor = this.mathcolor;
     }
 
     cancelStyle(color: string): string {
@@ -985,7 +988,10 @@ export class AMserver {
                     node = this.createMmlNode(symbol.tag, result2[0]);
 
                     // Set the correct attribute
-                    if (symbol.input === "color") node.setAttribute("mathcolor", st)
+                    if (symbol.input === "color") {
+                        node.style += "color:${st};"
+                        this.currentColor = st;     
+                    }
                     else if (symbol.input === "class") node.setAttribute("class", st)
                     else if (symbol.input === "id") node.setAttribute("id", st)
                     return [node, result2[1]];
@@ -1186,6 +1192,7 @@ export class AMserver {
                 for (r = 0; r < res.rows.length; r++) {
                     row = this.createMmlNode('mtr');
                     for (c = 0; c < res.rows[r].length; c++) {
+
                         if (res.rows[r][c].length == 1 &&
                             res.rows[r][c][0].nodeName == "mrow" &&
                             res.rows[r][c][0].childNodes.length == 1 &&
@@ -1195,6 +1202,9 @@ export class AMserver {
                             if (r == 0) {
                                 columnlines.pop();
                                 columnlines.push("solid");
+                            }
+                            if (c > 0) {
+                                row.lastChild.style += `border-right: 1px solid ${this.currentColor};`;
                             }
                         } else {
                             const cell = this.createMmlNode('mtd');
@@ -1241,7 +1251,7 @@ export class AMserver {
 
         for (const node of children) {
             if (expecting === 'mrow') {
-                if ( node.nodeName !== 'mrow') {
+                if (node.nodeName !== 'mrow') {
                     return { isMatrix: false, rows: [] };
                 }
                 rows.push(node);
@@ -1273,11 +1283,11 @@ export class AMserver {
         for (const row of rows) {
             const cells = Array.from(row.childNodes);
 
-            if (cells.length < 2) return { isMatrix: false, rows: []};
+            if (cells.length < 2) return { isMatrix: false, rows: [] };
 
             // First child must be an <mo> with a recognized opening bracket
             const firstNode = cells[0];
-    
+
             if (
                 // firstNode.nodeType !== 1 ||
                 firstNode.nodeName.toLowerCase() !== 'mo'
@@ -1288,7 +1298,7 @@ export class AMserver {
             if (!(openBracket in BRACKET_PAIRS)) return { isMatrix: false, rows: [] };
             if (openBracket == '(' && endsymbol == '}') {
                 // special treatment for set of ordered ntuples
-                return { isMatrix: false, rows: []};
+                return { isMatrix: false, rows: [] };
             }
 
             // Last child must be the matching closing bracket
@@ -1301,7 +1311,7 @@ export class AMserver {
             }
             const closeBracket = lastNode.firstChild.nodeValue;
             if (closeBracket !== BRACKET_PAIRS[openBracket]) {
-                return { isMatrix: false, rows: []};
+                return { isMatrix: false, rows: [] };
             }
 
             // Count comma-separated elements between the brackets

@@ -540,6 +540,7 @@ export class AMserver {
         this.addmathvariant = false; // true to add mathvariant on font changes.
         this.cancelColor = 'red'; // sets default color for cancel
         this.initSymbols();
+        this.currentColor = this.mathcolor;
     }
     cancelStyle(color) {
         return `
@@ -907,8 +908,10 @@ export class AMserver {
                     // Make a mathml node
                     node = this.createMmlNode(symbol.tag, result2[0]);
                     // Set the correct attribute
-                    if (symbol.input === "color")
-                        node.setAttribute("mathcolor", st);
+                    if (symbol.input === "color") {
+                        node.style += "color:${st};";
+                        this.currentColor = st;
+                    }
                     else if (symbol.input === "class")
                         node.setAttribute("class", st);
                     else if (symbol.input === "id")
@@ -1117,6 +1120,9 @@ export class AMserver {
                             if (r == 0) {
                                 columnlines.pop();
                                 columnlines.push("solid");
+                            }
+                            if (c > 0) {
+                                row.lastChild.style += `border-right: 1px solid ${this.currentColor};`;
                             }
                         }
                         else {

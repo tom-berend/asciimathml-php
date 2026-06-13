@@ -53,6 +53,7 @@ export declare class AMserver {
     decimalsign: string;
     addmathvariant: boolean;
     cancelColor: string;
+    currentColor: string;
     constructor();
     cancelStyle(color: string): string;
     createMmlNode(t: string, frag?: AMNode): AMNode;
