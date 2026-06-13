@@ -45,28 +45,21 @@ function endTable()
 
 <head>
     <meta charset="UTF-8">
-    <title>AsciiMath Example</title>
+    <title>AsciiMath PHP</title>
     <meta name=viewport content="width=device-width, initial-scale=0.8,
 			minimum-scale=0.8, maximum-scale=10">
-    <style>
-        @font-face {
-            font-family: "STIX-Two-Math";
-            src: url("./lib/STIX2Math.otf") format("opentype");
-            font-display: block;
-        }
 
-        math {
-            font-family: STIX-Two-Math;
-            font-size: larger;
-        }
+    <link href="https://fonts.googleapis.com/css2?family=STIX Two Math" rel="stylesheet">
+
+    <style>
+        /* math { font-family: STIX Two Math; } */
     </style>
+
     <link rel=stylesheet href=lib/screen.css>
 
 </head>
 
 <body>
-
-    <p id="insertMathHere"></p>
 
     <script type="module">
         import {
@@ -103,7 +96,7 @@ function endTable()
     <div id="wrapper">
 
         <nav>
-            <h1>AsciiMath</h1>
+            <h1>AsciiMath PHP</h1>
 
             <div id="links">
                 <a href="#about">about</a>
@@ -112,21 +105,20 @@ function endTable()
             </div>
         </nav>
 
-        <article>
             <section id="about">
                 <h2>About</h2>
 
-                <p>AsciiMath is an easy-to-write markup language for mathematics. Try it out:</p>
+                <p>AsciiMath is an easy-to-write markup language for mathematics. Try it:</p><br />
 
                 <div class="leftColumn">
-                    <label for="demoSource">Input:</label>
+                    <label for="demoSource"><i>Input:</i></label>
                     <br />
 
                     <textarea class="ioArea" id="demoSource">sum_(i=1)^n i^3=((n(n+1))/2)^2</textarea>
                 </div>
 
                 <div class="rightColumn">
-                    <label for="demoRendering">Rendering:</label>
+                    <label for="demoRendering"><i>Rendering:</i></label>
                     <br />
 
                     <div class="ioArea" id="demoRendering">
@@ -134,7 +126,7 @@ function endTable()
                     </div>
                 </div>
 
-                <p>This page is being rendered using the AsciiMathML PHP library. </p>
+                </br>
             </section>
 
             <section id="gettingStarted">
@@ -142,27 +134,17 @@ function endTable()
 
                 <ol>
                     <li>
-                        <p>Download the AsciiMath.php file from <a href=''>WHERE?</a> and include it in your <project class=""></project>to render your formulas.
-
+                        <p>Download <b>AsciiMath.php</b> from <a href='https://github.com/asciimath/asciimathml/tree/master/asciimath-based'>GitHub</a> and include it in your project.</p>
                         <pre class="code">
-&lt;style>
-    @font-face {
-        font-family: "STIX-Two-Math";
-        src: url("./lib/STIX2Math.otf") format("opentype");
-        font-display: block;
-    }
+require_once ('asciimath.php');
+$am = new AMserver();</pre>
 
-    math {
-        font-family: STIX-Two-Math;
-        font-size: larger;
-    }
-&lt;/style>
-</pre>
+                    </li>
+                    <li>
+                        <p>Some versions of Chrome don't offer a Math font by default.   Include this link in your header: </p>
+                        <pre class="code">
+&lt;link href="https://fonts.googleapis.com/css2?family=STIX Two Math" rel="stylesheet"></pre>
 
-                        <p>Text in your HTML enclosed in <code>`</code> (backticks) will now get
-                            rendered as a math formula. The math delimiters can also be customized.
-                            Check out the <a href=https://mathjax.org />MathJax</a> website for more
-                            information!</p>
                     </li>
                     <li>
                         <p>Load the AsciiMath javascript file
@@ -209,7 +191,7 @@ function endTable()
                 tdRend('**', 'ast');
                 tdRend('***', 'star');
                 tdRend('//', '');
-                tdRend('\\', 'backslash<br />setminus');
+                tdRend('setminus', 'backslash');
                 tdRend('xx', 'times');
                 tdRend('-:', 'div');
                 tdRend('|><', 'times');
@@ -441,12 +423,10 @@ function endTable()
                 tdRend('bold "AaBbCc"');
                 tdRend('italic AaBbCc"');
 
-                endTable()
+                endTable();
 
-                ?>
-                </tbody>
-                </table>
-                <br />
+                $examples = <<<EOD
+                echo "<br />
                 <h3>Standard Functions</h3>
 
                 <p>sin, cos, tan, sec, csc, cot,
@@ -491,32 +471,14 @@ function endTable()
                 <br />
 
 
-                <h3>The Grammar</h3>
-
-                <p>Here is a definition of the grammar used to parse AsciiMath expressions.
-                    In the Backus-Naur form given below, the letter on the left of the
-                    <code>::=</code> represents a category of symbols that could be one
-                    of the possible sequences of symbols listed on the right.
-                    The vertical bar <code>|</code> separates the alternatives.
-                </p>
-
-                <pre id=grammar>
-v ::= [A-Za-z] | greek letters | numbers | other constant symbols
-u ::= sqrt | text | bb | other unary symbols for font commands
-b ::= frac | root | stackrel | other binary symbols
-l ::= ( | [ | { | (: | {: | other left brackets
-r ::= ) | ] | } | :) | :} | other right brackets
-S ::= v | lEr | uS | bSS             Simple expression
-I ::= S_S | S^S | S_S^S | S          Intermediate expression
-E ::= IE | I/I                       Expression
-</pre>
-
             </section>
 
-        </article>
     </div>
 
 
 </body>
 
 </html>
+EOD;
+echo $examples;
+

@@ -1267,6 +1267,7 @@ export class AMserver {
         // str = str.replace(/&lt;/g, "<");
         let frag = this.AMparseExpr(str.replace(/^\s+/g, ""), false)[0];
         let node = this.createMmlNode("mstyle", frag);
+        node.style += "font-family:STIX Two Math;";
         if (this.mathcolor != "")
             node.setAttribute("mathcolor", this.mathcolor);
         if (this.mathfontsize != "") {

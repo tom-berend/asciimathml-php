@@ -157,12 +157,7 @@ $html .= '<title>ASCIIMathML test suite</title>
             padding: 5px;
             text-align: center;
         }
-
-        math {
-            font-family: STIX Two Math;
-            font-size: larger;
-        }    
-    </style>';
+        </style>';
 
 
 

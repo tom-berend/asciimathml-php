@@ -882,9 +882,12 @@ class AMserver
             $st = substr($str, 0, 1); //take 1 character
             $tagst = (("A" > $st or $st > "Z") and ("a" > $st or $st > "z")) ? "mo" : "mi";
         }
-        if ($st == "-" and $str[1] !== ' ' and $this->AMpreviousSymbol == $INFIX) {
-            $this->AMcurrentSymbol = $INFIX;  //trick "/" into recognizing "-" on second parse
-            return ['input' => $st, 'tag' => $tagst, 'output' => ($st == "-" ? "\u{2212}" : $st), 'ttype' => $UNARY, 'func' => true];
+        if (strlen($str) > 1) {   // php doesn't like str[1] of empty string
+
+            if ($st == "-" and $str[1] !== ' ' and $this->AMpreviousSymbol == $INFIX) {
+                $this->AMcurrentSymbol = $INFIX;  //trick "/" into recognizing "-" on second parse
+                return ['input' => $st, 'tag' => $tagst, 'output' => ($st == "-" ? "\u{2212}" : $st), 'ttype' => $UNARY, 'func' => true];
+            }
         }
         return ['input' => $st, 'tag' => $tagst, 'output' => ($st == "-" ? "\u{2212}" : $st), 'ttype' => $CONST];
     }
@@ -1101,11 +1104,15 @@ class AMserver
                 $this->AMremoveBrackets($result2[0]);
                 if (in_array($symbol['input'], ['color', 'class', 'id'])) {
 
-                    // Get the second argument
-                    if ($str[0] == "{")      $i = strpos($str, '}');
-                    else if ($str[0] == "(") $i = strpos($str, ")");
-                    else if ($str[0] == "[") $i = strpos($str, "]");
-                    $st = substr($str, 1,$i-1);
+                    $st='';
+                    if (strlen($str) > 0) {   // php doesn't like str[0] of empty string
+                    
+                        // Get the second argument
+                        if ($str[0] == "{")      $i = strpos($str, '}');
+                        else if ($str[0] == "(") $i = strpos($str, ")");
+                        else if ($str[0] == "[") $i = strpos($str, "]");
+                        $st = substr($str, 1, $i - 1);
+                    }
 
                     // Make a mathml $node
                     $node = $this->createMmlNode($symbol['tag'], $result2[0]);
@@ -1114,9 +1121,10 @@ class AMserver
                     if ($symbol['input'] === "color") {
                         // printNice("'$st'");
                         $node->setAttribute("mathcolor", $st);
-                    } else if ($symbol['input'] === "class") $node->setAttribute("class", $st);
-                    else if ($symbol['input'] === "id") $node->setAttribute("id", $st);
+                    } else if ($symbol['input'] === "class"){ $node->setAttribute("class", $st);
+                    }else if ($symbol['input'] === "id"){ $node->setAttribute("id", $st);}
                     return [$node, $result2[1]];
+                    
                 }
                 if ($symbol['input'] == "root" or $symbol['output'] == "stackrel")
                     $newFrag->appendChild($result2[0]);
@@ -1498,6 +1506,8 @@ class AMserver
         // $str = str_replace('&lt;', "<",$str);
         $frag = $this->AMparseExpr(trim($str));
         $node = $this->createMmlNode("mstyle", $frag[0]);
+        $node->style .= "font-family:STIX Two Math;";
+
         if ($this->mathcolor != "") $node->setAttribute("mathcolor", $this->mathcolor);
         if ($this->mathfontsize != "") {
             $node->setAttribute("fontsize", $this->mathfontsize);
