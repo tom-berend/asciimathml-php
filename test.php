@@ -216,7 +216,8 @@ function testSuite()
 {
 
     appnd ('phi,varphi');
-    appnd('[[a,b]]');
+    appnd('[|:a,b:|]');
+    appnd('lt mlt gt mgt in !in sub !sub');
     appnd('{[(1,2),(3,4)],[(1,2),(3,4)]}', 'should NOT be a column vector');
     appnd('{((1,2),(3,4)),((1,2),(3,4))}', 'like above');
     appnd('[((1,2),(3,4)),((1,2),(3,4))]', 'like above');

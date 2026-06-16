@@ -74,7 +74,7 @@ export class AMNode {
 
     constructor(t: string, content = '') {
         this.nodeName = t
-        this.nodeValue = content
+        this.nodeValue = content.replace('<', '&lt;')  // escape contants with <
         this.unique = Symbol()
         // if (t === '') { this.nodeType = 11 }
         // if (t === '#text') { this.nodeType = 3 }
@@ -945,9 +945,9 @@ export class AMserver {
                     ) {
                         // special case of single character base for vector accent,
                         // where stretchy can make it look bad
-                        accnode.setAttribute("stretchy", false);
+                        accnode.setAttribute("stretchy", 'false');
                     } else {
-                        accnode.setAttribute("stretchy", true);
+                        accnode.setAttribute("stretchy", 'true');
                     }
                     node.appendChild(accnode);
                     return [node, result[1]];
@@ -1212,7 +1212,8 @@ export class AMserver {
                     }
                     table.appendChild(row);
                 }
-                table.setAttribute("columnlines", columnlines.join(" "));
+                if (columnlines.length > 0)
+                    table.setAttribute("columnlines", columnlines.join(" "));
                 if (typeof symbol.invisible == "boolean" && symbol.invisible) {
                     table.setAttribute("columnalign", "left");
                 }
@@ -1352,7 +1353,7 @@ export class AMserver {
     }
 
 
-    parseMath(str: string): string {
+    parseMath(str: string, inline: true): string {
         this.AMnestingDepth = 0;
         //some basic cleanup for dealing with stuff editors like TinyMCE adds
         // str = str.replace(/&nbsp;/g, "");
@@ -1374,6 +1375,7 @@ export class AMserver {
         if (this.displaystyle)
             node.setAttribute("displaystyle", "true");
         node = this.createMmlNode("math", node);
+        node.setAttribute("display", inline ? "inline" : "block");
 
         node = this.createMmlNode('div', node)
         // node.style = this.cancelStyle;

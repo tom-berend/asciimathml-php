@@ -1,4 +1,7 @@
 <?php
+// accnode.setAttribute("stretchy", 'false');
+// this.nodeValue = content.replace('<','&lt;')  // escape contants with <
+
 
 
 declare(strict_types=1);   // strict typing
@@ -80,7 +83,7 @@ class AMNode
     function __construct(string $tag,  string $content = '')
     {
         $this->nodeName = $tag;
-        $this->nodeValue = $content;
+        $this->nodeValue = htmlentities($content);
         $this->unique = uniqid();
     }
 
@@ -469,8 +472,8 @@ $AMsymbols = [
     ['input' => "}", 'tag' => "mo", 'output' => "}", 'tex' => null, 'ttype' => $RIGHTBRACKET],
     ['input' => "|", 'tag' => "mo", 'output' => "|", 'tex' => null, 'ttype' => $LEFTRIGHT],
     ['input' => ":|:", 'tag' => "mo", 'output' => "|", 'tex' => null, 'ttype' => $CONST],
-    ['input' => "|:", 'tag' => "mo", 'output' => "|", 'tex' => null, 'ttype' => $LEFTBRACKET],
-    ['input' => ":|", 'tag' => "mo", 'output' => "|", 'tex' => null, 'ttype' => $RIGHTBRACKET],
+    ['input' => "|:", 'tag' => "mo", 'output' => "| ", 'tex' => null, 'ttype' => $LEFTBRACKET],
+    ['input' => ":|", 'tag' => "mo", 'output' => " |", 'tex' => null, 'ttype' => $RIGHTBRACKET],
     //{'input' =>"or", 'tag' =>"mo", 'output' =>"or", 'tex' =>null, 'ttype' =>$LEFTRIGHT},
     ['input' => "(:", 'tag' => "mo", 'output' => "\u{2329}", 'tex' => "langle", 'ttype' => $LEFTBRACKET],
     ['input' => ":)", 'tag' => "mo", 'output' => "\u{232A}", 'tex' => "rangle", 'ttype' => $RIGHTBRACKET],
@@ -999,7 +1002,7 @@ class AMserver
                 $newFrag->appendChild(
                     $this->createMmlNode($symbol['tag'], $this->createTextNode($st))
                 );
-                if ($st[strlen($st) - 1] == " ") {
+                if (strlen($st) > 1 and $st[strlen($st) - 1] == " ") {
                     $node = $this->createMmlNode("mspace");
                     $node->setAttribute("width", "1ex");
                     $newFrag->appendChild($node);
@@ -1029,7 +1032,7 @@ class AMserver
                     ) {
                         return [$this->createMmlNode(
                             $symbol['tag'],
-                            $this->createTextNode($symbol['output'])
+                            $this->createTextNode($symbol['output'] . " ")
                         ), $str];
                     } else {
                         $node = $this->createMmlNode(
@@ -1070,9 +1073,9 @@ class AMserver
                     ) {
                         // special case of single character base for vector accent,
                         // where stretchy can make it look bad
-                        $accnode->setAttribute("stretchy", false);
+                        $accnode->setAttribute("stretchy", 'false');
                     } else {
-                        $accnode->setAttribute("stretchy", true);
+                        $accnode->setAttribute("stretchy", 'true');
                     }
                     $node->appendChild($accnode);
                     return [$node, $result[1]];
@@ -1104,9 +1107,8 @@ class AMserver
                 $this->AMremoveBrackets($result2[0]);
                 if (in_array($symbol['input'], ['color', 'class', 'id'])) {
 
-                    $st='';
+                    $st = '';
                     if (strlen($str) > 0) {   // php doesn't like str[0] of empty string
-                    
                         // Get the second argument
                         if ($str[0] == "{")      $i = strpos($str, '}');
                         else if ($str[0] == "(") $i = strpos($str, ")");
@@ -1121,10 +1123,12 @@ class AMserver
                     if ($symbol['input'] === "color") {
                         // printNice("'$st'");
                         $node->setAttribute("mathcolor", $st);
-                    } else if ($symbol['input'] === "class"){ $node->setAttribute("class", $st);
-                    }else if ($symbol['input'] === "id"){ $node->setAttribute("id", $st);}
+                    } else if ($symbol['input'] === "class") {
+                        $node->setAttribute("class", $st);
+                    } else if ($symbol['input'] === "id") {
+                        $node->setAttribute("id", $st);
+                    }
                     return [$node, $result2[1]];
-                    
                 }
                 if ($symbol['input'] == "root" or $symbol['output'] == "stackrel")
                     $newFrag->appendChild($result2[0]);
@@ -1354,7 +1358,9 @@ class AMserver
                     }
                     $table->appendChild($row);
                 }
-                $table->setAttribute("columnlines", implode(' ', $columnlines));
+                if (count($columnlines) > 0) {
+                    $table->setAttribute("columnlines", implode(' ', $columnlines));
+                }
                 if (isset($symbol['invisible']) and $symbol['invisible']) {
                     $table->setAttribute("columnalign", "left");
                 }
@@ -1497,7 +1503,7 @@ class AMserver
 
 
 
-    function parseMath(string $str): string
+    function parseMath(string $str, bool $inline = true): string
     {
         $this->AMnestingDepth = 0;
         //some basic cleanup for dealing with stuff editors like TinyMCE adds
@@ -1523,7 +1529,7 @@ class AMserver
         $node = $this->createMmlNode("math", $node);
         // $node->style .= "font-family:math;";
         // $node->setAttribute("font-family","math");
-        $node->setAttribute("display", "block");
+        $node->setAttribute("display", $inline ? "inline" : "block");
 
         if ($this->showasciiformulaonhover) {                     //fixed by djhsu so newline
             $node = $this->createMmlNode('div', $node);

@@ -102,10 +102,6 @@ caption {
     min-height: 2.5em
 }
 
-article {
-    /*padding-top: 6em;*/
-}
-
 .leftColumn,
 .rightColumn {
     display: inline-block;
@@ -190,24 +186,3 @@ textarea.ioArea {
     font-size: 0.75em;
 }
 
-@media (max-width: 720px){
-
-    h1 {
-        display: block;
-        margin-bottom: 1em;
-    }
-
-    .leftColumn,
-    .rightColumn {
-        display: block;
-        width: 100%;
-    }
-
-    #links {
-        position: static;
-    }
-
-    #wrapper {
-        width: 100%;
-    }
-}
