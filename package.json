@@ -1,6 +1,6 @@
 {
   "name": "asciimathml-ts",
-  "version": "2.0.1",
+  "version": "2.1.0",
   "description": "AsciiMathML converted to TS, suitable for server",
   "main": "asciimath.js",
   "types": "asciimath.d.ts",
