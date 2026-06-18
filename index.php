@@ -656,7 +656,7 @@ EOD;
 
 
 
-function appnd($eqn, $comment)
+function appnd(string $eqn, string $comment)
 {
     global $am;
     echo "\n<tr><td>$eqn</td><td>{$am->parseMath($eqn)}</td><td>$comment</td></tr>";
